@@ -10,6 +10,8 @@
   <dependencies>
     <dependency org="commons-logging" name="commons-logging" rev="1.1.1" conf="prod->default"/>
     <dependency org="commons-beanutils" name="commons-beanutils" rev="1.8.3" conf="prod->default"/>
+    <dependency org="javassist" name="javassist" rev="3.12.1.GA" conf="prod->default"/>
+    
     <dependency org="junit" name="junit" rev="4.10" conf="test->default" />
   </dependencies>
   

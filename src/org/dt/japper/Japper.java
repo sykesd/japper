@@ -193,15 +193,19 @@ public class Japper {
    * @param sql the query whose results we are going to map
    * @param metaData the meta data of the results of the query
    * @return a Mapper implementation
+   * @throws SQLException 
    */
-  public static <T> Mapper<T> getMapper(Class<T> resultType, String sql, ResultSetMetaData metaData) {
-    // TODO here is an opportunity for Dapper like fanciness
-    // The default mapper uses reflection on every row to populate the result object
-    // However, we could use reflection once and generate a new class that would perform the object
-    // creation without using reflection again. 
-    // Much easier in .NET, but not too bad using something like Javassist
+  public static <T> Mapper<T> getMapper(Class<T> resultType, String sql, ResultSetMetaData metaData) throws SQLException {
+    // TODO Once we have a better feel for what the performance overhead of the code generation
+    // is, and whether it provides a benefit for large result sets and/or multiple invocations of 
+    // the same query, we can add some decision code in here to decide when to use the default,
+    // reflective Mapper implementation, and when to generate a specific one dynamically.
     
-    return new DefaultMapper<T>(resultType, metaData);
+    // For now we always generate one dynamically
+    return DynamicMapper.get(resultType, sql, metaData);
+
+    // this is the code to create the default, reflective Mapper
+//    return new DefaultMapper<T>(resultType, metaData);
   }
   
   
@@ -290,18 +294,31 @@ public class Japper {
           log.debug("  "+names.get(i)+" = "+values.get(i));
         }
       }
-      log.info("  preparation: "+toMillis(prepStart, prepEnd)+"ms");
-      log.info("        query: "+toMillis(queryStart, queryEnd)+"ms");
-      log.info("          map: "+toMillis(mapStart, mapEnd)+"ms");
+      log.info("  preparation: "+nicify(prepStart, prepEnd));
+      log.info("        query: "+nicify(queryStart, queryEnd));
+      log.info("          map: "+nicify(mapStart, mapEnd));
       log.info("                     row count: "+rowCount);
-      log.info("               mapper creation: "+(mapperCreationEnd - mapperCreationStart)+"ns");
-      log.info("                     first row: "+(mapFirstRowEnd - mapFirstRowStart)+"ns");
-      log.info("                      avg. row: "+avgPerRow()+"ns");
-      log.info("Total: "+toMillis(globalStart, globalEnd)+"ms");
+      log.info("               mapper creation: "+nicify(mapperCreationStart, mapperCreationEnd));
+      log.info("                     first row: "+nicify(mapFirstRowStart, mapFirstRowEnd));
+      log.info("                      avg. row: "+nicify((long) avgPerRow()));
+      log.info("Total: "+nicify(globalStart, globalEnd));
     }
+
+    private static final long MILLI_THRESHOLD = 10000000L;
+    private static final long MICRO_THRESHOLD = 10000L;
     
-    private long toMillis(long start, long end) {
-      return (end - start)/1000000;
+    private String nicify(long start, long end) { return nicify(end - start); }
+    
+    private String nicify(long duration) {
+      if (duration > MILLI_THRESHOLD) {
+        return Long.toString(duration / 1000000L)+"ms";
+      }
+      
+      if (duration > MICRO_THRESHOLD) {
+        return Long.toString(duration / 1000L)+"us";
+      }
+      
+      return Long.toString(duration) + "ns";
     }
     
     private double avgPerRow() {
