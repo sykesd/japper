@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ivy-module version="2.0">
+  <info organisation="org.dt" module="japper" />
+  
+  <configurations>
+    <conf name="prod" description="JARs used by product code" />
+    <conf name="test" description="JARs used by test code" />
+  </configurations>
+  
+  <dependencies>
+    <dependency org="commons-logging" name="commons-logging" rev="1.1.1" conf="prod->default"/>
+    <dependency org="commons-beanutils" name="commons-beanutils" rev="1.8.3" conf="prod->default"/>
+    <dependency org="junit" name="junit" rev="4.10" conf="test->default" />
+  </dependencies>
+  
+</ivy-module>

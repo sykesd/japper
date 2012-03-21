@@ -1,0 +1,11 @@
+# Eclipse project files
+.project
+.classpath
+.settings/
+
+# Build time directories
+classes/
+lib-test/
+lib/
+test-classes/
+
