@@ -122,7 +122,7 @@ public class DynamicMapperFactory {
       // read into temp variable
       String tempName = "t"+tempCounter++;
       
-      source.append("    ").append(ps.writeType.getName()).append(" ").append(tempName).append(" = rs.").append(ps.readerMethod).append("(").append(ps.columnIndex).append(");\n");
+      source.append("    ").append(ps.readType.getName()).append(" ").append(tempName).append(" = rs.").append(ps.readerMethod).append("(").append(ps.columnIndex).append(");\n");
 
       if (ps.isNullable()) {
         // add NULL check
@@ -143,7 +143,7 @@ public class DynamicMapperFactory {
         // complete NULL check and add else clause
         source.append("    }\n");
         source.append("    else {\n");
-        source.append("      ").append(ps.reference).append('.').append(ps.writerMethod).append("(null);\n");
+        source.append("      ").append(ps.reference).append('.').append(ps.writerMethod).append("(").append(getNullValue(ps)).append(");\n");
         source.append("    }\n");
       }
     }
@@ -152,25 +152,77 @@ public class DynamicMapperFactory {
   }
 
   
+  private static String getNullValue(PropertySetter ps) {
+    if (ps.writeType.isPrimitive()) {
+      if (ps.writeType.equals(boolean.class)) return "false";
+      if (ps.writeType.equals(float.class) || ps.writeType.equals(double.class)) return "0.0";
+      return "0";
+    }
+    
+    return "null";
+  }
+  
   private static int buildConversion(StringBuilder source, PropertySetter ps, String tempName, String sourceTempName, int tempCounter) {
     if (ps.writeType.equals(java.sql.Timestamp.class) && ps.readType.equals(java.sql.Date.class) ) {
       source.append("    ").append(tempName).append(" = new java.sql.Timestamp(").append(sourceTempName).append(".getTime());\n");
       return tempCounter;
     }
+
+    if (ps.writeType.equals(BigDecimal.class)) {
+      if (ps.readType.equals(int.class) || ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = new java.math.BigDecimal(").append(sourceTempName).append(");\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(int.class) || ps.writeType.equals(Integer.class)) {
+      if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = (int) ").append(sourceTempName).append(";\n");
+        return tempCounter;
+      }
+      
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".intValue();\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(float.class) || ps.writeType.equals(float.class)) {
+      if (ps.readType.equals(int.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = (float) ").append(sourceTempName).append(";\n");
+        return tempCounter;
+      }
+      
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".floatValue();\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(double.class) || ps.writeType.equals(double.class)) {
+      if (ps.readType.equals(int.class) || ps.readType.equals(float.class)) {
+        source.append("    ").append(tempName).append(" = (double) ").append(sourceTempName).append(";\n");
+        return tempCounter;
+      }
+      
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".doubleValue();\n");
+        return tempCounter;
+      }
+    }
     
-    // TODO Handle all the fun numeric data types and combinations
-    
-    return tempCounter;
+    throw new IllegalArgumentException("Cannot convert from "+ps.readType.getName()+" to "+ps.writeType.getName());
   }
 
   private static String buildReference(StringBuilder source, PropertyDescriptor[] path) {
     if (path.length == 1) return "dest";
     
-    StringBuilder reference = new StringBuilder(path[0].getReadMethod().getName()).append("()");
+    StringBuilder reference = new StringBuilder("dest");
     
     for (int i = 0; i < path.length-1; i++) {
-      reference.append(i == 0 ? "" : ".").append(path[0].getReadMethod().getName()).append("()");
-      source.append("    if (").append(reference).append(" == null) ").append(path[i].getWriteMethod().getName()).append("( new ").append(path[i].getPropertyType().getName()).append("() );\n");
+      String referenceToHere = reference.toString();
+      reference.append(".").append(path[i].getReadMethod().getName()).append("()");
+      source.append("    if (").append(reference).append(" == null) ").append(referenceToHere).append(".").append(path[i].getWriteMethod().getName()).append("( new ").append(path[i].getPropertyType().getName()).append("() );\n");
     }
     
     return reference.toString();
@@ -225,15 +277,42 @@ public class DynamicMapperFactory {
           readType = java.sql.Date.class;
           break;
           
-        case Types.NUMERIC:
+        case Types.INTEGER:
           if (writeType.isAssignableFrom(BigDecimal.class)) {
             readerMethod = "getBigDecimal";
             readType = BigDecimal.class;
           }
           else {
+            readerMethod = "getInt";
+            readType = int.class;
+          }
+          break;
+          
+        case Types.FLOAT:
+          if (writeType.isAssignableFrom(BigDecimal.class)) {
             readerMethod = "getBigDecimal";
             readType = BigDecimal.class;
           }
+          else {
+            readerMethod = "getFloat";
+            readType = float.class;
+          }
+          break;
+          
+        case Types.DOUBLE:
+          if (writeType.isAssignableFrom(BigDecimal.class)) {
+            readerMethod = "getBigDecimal";
+            readType = BigDecimal.class;
+          }
+          else {
+            readerMethod = "getDouble";
+            readType = double.class;
+          }
+          break;
+          
+        case Types.NUMERIC:
+          readerMethod = "getBigDecimal";
+          readType = BigDecimal.class;
           break;
           
         default:

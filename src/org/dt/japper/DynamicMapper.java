@@ -40,8 +40,24 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DynamicMapper {
 
+  /*
+   * This is the cache of the generated mappers, which means we only have to generate them
+   * once for each query. However, this cache only ever grows. It might make sense to try
+   * and use some form of LRU cache to limit the amount of memory used here
+   * 
+   */
   private static Map<Key, Mapper<?>> mapperCache = new ConcurrentHashMap<Key, Mapper<?>>();
-  
+
+  /**
+   * Get a Mapper<T> implementation that can map the result of the given SQL (meta data in metaData)
+   * to objects of the resultType.
+   * 
+   * @param resultType the type we are mapping the results to
+   * @param sql the SQL that generates the result
+   * @param metaData the metaData for the given SQL
+   * @return a Mapper<T> implementation to map results of the given query to resultType
+   * @throws SQLException
+   */
   public static <T> Mapper<T> get(Class<T> resultType, String sql, ResultSetMetaData metaData) throws SQLException {
     Key key = new Key(sql, resultType);
     

@@ -135,7 +135,18 @@ public class DefaultMapper<T> implements Mapper<T> {
    */
   private void setProperty(Object dest, String propertyName, Class<?> writeType, BigDecimal value) {
     try {
-      PropertyUtils.setProperty(dest, propertyName, value);
+      if (writeType.equals(int.class) || writeType.equals(Integer.class)) {
+        PropertyUtils.setProperty(dest, propertyName, value.intValue());
+      }
+      else if (writeType.equals(float.class) || writeType.equals(Float.class)) {
+        PropertyUtils.setProperty(dest, propertyName, value.floatValue());
+      }
+      else if (writeType.equals(double.class) || writeType.equals(Double.class)) {
+        PropertyUtils.setProperty(dest, propertyName, value.doubleValue());
+      }
+      else {
+        PropertyUtils.setProperty(dest, propertyName, value);
+      }
     }
     catch (Exception ex) {
       throw new IllegalArgumentException("Could not set property '"+propertyName+"' from BigDecimal value", ex);

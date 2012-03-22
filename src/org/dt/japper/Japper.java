@@ -126,6 +126,16 @@ public class Japper {
     profile.setSql(parser.getSql());
     PreparedStatement ps = conn.prepareStatement(parser.getSql());
     
+    /*
+     * For some testing over a remote connection, we want to make sure the query results
+     * get loaded in a single round-trip
+     * 200 is a good size for these tests
+     * 
+     * TODO think a bit more about whether this is a good default, or whether this
+     * needs to be a parameter
+     */
+    ps.setFetchSize(500); 
+    
     if (params != null && params.length > 0) {
       if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
       
@@ -200,15 +210,30 @@ public class Japper {
     // is, and whether it provides a benefit for large result sets and/or multiple invocations of 
     // the same query, we can add some decision code in here to decide when to use the default,
     // reflective Mapper implementation, and when to generate a specific one dynamically.
+
+    // For now we leave it up to the caller. Code generation is on by default, and can be disabled
+    // via a specific comment inside the SQL query
     
-    // For now we always generate one dynamically
-    return DynamicMapper.get(resultType, sql, metaData);
+    if (canUseDynamicMapper(sql)) {
+      // Use a dynamically generated, optimized mapper object
+      return DynamicMapper.get(resultType, sql, metaData);
+    }
 
     // this is the code to create the default, reflective Mapper
-//    return new DefaultMapper<T>(resultType, metaData);
+    return new DefaultMapper<T>(resultType, metaData);
   }
   
-  
+
+  /**
+   * Check to see if the caller put in the Japper hint to disable code gen
+   * in the query
+   * 
+   * @param sql the sql check
+   * @return true if a dynamically generated mapper can be used, false otherwise
+   */
+  private static boolean canUseDynamicMapper(String sql) {
+    return !sql.contains("/*-codeGen*/");
+  }
   
   
   private static class Profile {
