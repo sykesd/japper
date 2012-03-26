@@ -6,6 +6,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -61,22 +64,34 @@ public class DynamicMapperFactory {
 
   private static final Log log = LogFactory.getLog(Japper.class);
   
+  /*
+   * TODO There is a potential memory leak here, since no class
+   * created by this pool will ever get unloaded (garbage collected)
+   * We really need to gate access to the pool via a getter that
+   * also periodically creates a new pool
+   * 
+   */
   private static final ClassPool CLASS_POOL = new ClassPool(true);
   
   @SuppressWarnings("unchecked")
   public static <T> Mapper<T> create(Class<T> resultType, ResultSetMetaData metaData) throws SQLException {
     CtClass impl = createClass();
 
-    StringBuilder sb = new StringBuilder(1024).append("  public Object map(java.sql.ResultSet rs) {\n");
-    buildMapMethod(sb, resultType, metaData);
-    sb.append("    return dest;\n").append("  }");
+    String methodBody = buildMapMethodBody(resultType, metaData);
+    
+    String source = new StringBuilder()
+        .append("  public Object map(java.sql.ResultSet rs) {\n")
+        .append(methodBody)
+        .append("    return dest;\n")
+        .append("  }")
+        .toString();
     
     try {
       if (log.isDebugEnabled()) {
-        log.debug("Generated method:\n"+sb);
+        log.debug("Generated method:\n"+source);
       }
       
-      CtMethod mapImpl = CtNewMethod.make(sb.toString(), impl);
+      CtMethod mapImpl = CtNewMethod.make(source, impl);
       impl.addMethod(mapImpl);
       
       return (Mapper<T>) impl.toClass().newInstance();
@@ -97,23 +112,82 @@ public class DynamicMapperFactory {
       throw new IllegalStateException("Very weird, Javassist can't find Mapper interface!", nfEx);
     }
   }
-  
-  private static <T> void buildMapMethod(StringBuilder source, Class<T> resultType, ResultSetMetaData metaData) throws SQLException {
-    source.append("    ").append(resultType.getName()).append(" dest = new ").append(resultType.getName()).append("();\n\n");
+
+  /**
+   * Build the method body to convert the query results described by metaData to instances
+   * of resultType.
+   * 
+   * Graph Guards
+   * resultType may have complex properties, i.e. a column in metaData gets mapped to a property of
+   * a property of resultType, or a property of a property of a property of result type.
+   * The constructor for resultType may not create an instance of the complex property, instead
+   * relying on its clients to set an instance. In order to allow for this we need to put a check
+   * in before access to any complex property in order to make sure we don't throw a 
+   * NullPointerException.
+   * Obviously, we only need to check each complex property once, and we need to make sure that we
+   * build the full object graph in the right order. To achieve this we keep a list of the complex
+   * properties we have accessed as we come across them.
+   * The TreeMap allows us to keep this list sorted by depth as we build it.
+   * Once we have been through each property we produce the code for each guard clause and insert
+   * to near the top of the method body.
+   * 
+   * @param resultType the type we are mapping to
+   * @param metaData the result set we are mapping from
+   * @return the source code of the method body to perform the mapping
+   * @throws SQLException
+   */
+  private static <T> String buildMapMethodBody(Class<T> resultType, ResultSetMetaData metaData) throws SQLException {
+    StringBuilder source = new StringBuilder().append("    ").append(resultType.getName()).append(" dest = new ").append(resultType.getName()).append("();\n\n");
 
     int tempCounter = 0;
+    Map<String, String> graphGuardMap = new TreeMap<String, String>(new GraphGuardComparator());
+    StringBuilder setterSource = new StringBuilder();
     
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
       String columnName = metaData.getColumnName(i);
       PropertyDescriptor[] path = MapperUtils.findPropertyPath(resultType, columnName);
       if (path != null) {
-        tempCounter = buildPropertySetter(source, i, metaData, path, tempCounter);
+        tempCounter = buildPropertySetter(setterSource, graphGuardMap, i, metaData, path, tempCounter);
       }
+    }
+    
+    String graphGuards = buildGraphGuards(graphGuardMap);
+    source.append(graphGuards).append(setterSource);
+    
+    return source.toString();
+  }
+  
+
+  private static class GraphGuardComparator implements Comparator<String> {
+    @Override
+    public int compare(String g1, String g2) {
+      int c1 = countDots(g1);
+      int c2 = countDots(g2);
+      return (c1 < c2 ? -1 : (c1 == c2 ? 0 : 1));   // Cribbed from Integer.compareTo()
+    }
+    
+    private int countDots(String s) {
+      int count = 0;
+      int index = -1;
+      while ((index = s.indexOf('.', index)) >= 0) {
+        count++;
+        index++;
+      }
+      return count;
     }
   }
   
-  private static int buildPropertySetter(StringBuilder source, int columnIndex, ResultSetMetaData metaData, PropertyDescriptor[] path, int tempCounter) throws SQLException {
-    PropertySetter ps = new PropertySetter(columnIndex, metaData, path, buildReference(source, path));
+  private static String buildGraphGuards(Map<String, String> graphGuardMap) {
+    StringBuilder guards = new StringBuilder();
+    for (String reference : graphGuardMap.keySet()) {
+      guards.append( graphGuardMap.get(reference) );
+    }
+    
+    return guards.append("\n").toString();
+  }
+
+  private static int buildPropertySetter(StringBuilder source, Map<String,String> graphGuardMap, int columnIndex, ResultSetMetaData metaData, PropertyDescriptor[] path, int tempCounter) throws SQLException {
+    PropertySetter ps = new PropertySetter(columnIndex, metaData, path, buildReference(path, graphGuardMap));
     
     if (!ps.isNullable() && !ps.isNeedsConversion()) {
       source.append("    ").append(ps.reference).append('.').append(ps.writerMethod).append("( rs.").append(ps.readerMethod).append("(").append(columnIndex).append(") );\n");
@@ -214,7 +288,10 @@ public class DynamicMapperFactory {
     throw new IllegalArgumentException("Cannot convert from "+ps.readType.getName()+" to "+ps.writeType.getName());
   }
 
-  private static String buildReference(StringBuilder source, PropertyDescriptor[] path) {
+  
+  
+  
+  private static String buildReference(PropertyDescriptor[] path, Map<String, String> graphGuardMap) {
     if (path.length == 1) return "dest";
     
     StringBuilder reference = new StringBuilder("dest");
@@ -222,7 +299,11 @@ public class DynamicMapperFactory {
     for (int i = 0; i < path.length-1; i++) {
       String referenceToHere = reference.toString();
       reference.append(".").append(path[i].getReadMethod().getName()).append("()");
-      source.append("    if (").append(reference).append(" == null) ").append(referenceToHere).append(".").append(path[i].getWriteMethod().getName()).append("( new ").append(path[i].getPropertyType().getName()).append("() );\n");
+      
+      if (!graphGuardMap.containsKey(referenceToHere)) {
+        String guard = "    if ("+reference+" == null) "+referenceToHere+"."+path[i].getWriteMethod().getName()+"( new "+path[i].getPropertyType().getName()+"() );\n";
+        graphGuardMap.put(referenceToHere, guard);
+      }
     }
     
     return reference.toString();
