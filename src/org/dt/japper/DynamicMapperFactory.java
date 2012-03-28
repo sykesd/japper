@@ -144,7 +144,7 @@ public class DynamicMapperFactory {
     StringBuilder setterSource = new StringBuilder();
     
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
-      String columnName = metaData.getColumnName(i);
+      String columnName = metaData.getColumnLabel(i);
       PropertyDescriptor[] path = MapperUtils.findPropertyPath(resultType, columnName);
       if (path != null) {
         tempCounter = buildPropertySetter(setterSource, graphGuardMap, i, metaData, path, tempCounter);
@@ -163,7 +163,11 @@ public class DynamicMapperFactory {
     public int compare(String g1, String g2) {
       int c1 = countDots(g1);
       int c2 = countDots(g2);
-      return (c1 < c2 ? -1 : (c1 == c2 ? 0 : 1));   // Cribbed from Integer.compareTo()
+      if (c1 == c2) {
+        return g1.compareTo(g2);
+      }
+      
+      return (c1 < c2 ? -1 : 1); 
     }
     
     private int countDots(String s) {
@@ -300,9 +304,10 @@ public class DynamicMapperFactory {
       String referenceToHere = reference.toString();
       reference.append(".").append(path[i].getReadMethod().getName()).append("()");
       
-      if (!graphGuardMap.containsKey(referenceToHere)) {
+      String guardReference = referenceToHere+"."+path[i].getName();
+      if (!graphGuardMap.containsKey(guardReference)) {
         String guard = "    if ("+reference+" == null) "+referenceToHere+"."+path[i].getWriteMethod().getName()+"( new "+path[i].getPropertyType().getName()+"() );\n";
-        graphGuardMap.put(referenceToHere, guard);
+        graphGuardMap.put(guardReference, guard);
       }
     }
     

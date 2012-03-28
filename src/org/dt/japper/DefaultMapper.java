@@ -60,7 +60,7 @@ public class DefaultMapper<T> implements Mapper<T> {
     T dest = create(resultType);
     
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
-      MapperUtils.Ref ref = MapperUtils.findPropertyInGraph(dest, metaData.getColumnName(i));
+      MapperUtils.Ref ref = MapperUtils.findPropertyInGraph(dest, metaData.getColumnLabel(i));
       if (ref != null) {
         setProperty(ref, rs, i);
       }
