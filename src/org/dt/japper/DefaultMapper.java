@@ -7,7 +7,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
@@ -50,9 +52,15 @@ public class DefaultMapper<T> implements Mapper<T> {
   private Class<T> resultType;
   private ResultSetMetaData metaData;
 
+  private List<PropertyDescriptor[]> cachedPaths = new ArrayList<PropertyDescriptor[]>();
+  
+  private static final PropertyDescriptor[] EMPTY_PATH = {};
+  
   public DefaultMapper(Class<T> resultType, ResultSetMetaData metaData) {
     this.resultType = resultType;
     this.metaData = metaData;
+    
+    cachedPaths.add(EMPTY_PATH);
   }
   
   @Override
@@ -60,21 +68,60 @@ public class DefaultMapper<T> implements Mapper<T> {
     T dest = create(resultType);
     
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
-      MapperUtils.Ref ref = MapperUtils.findPropertyInGraph(dest, metaData.getColumnLabel(i));
-      if (ref != null) {
-        setProperty(ref, rs, i);
+      if (cachedPaths.size() <= i) {
+        PropertyDescriptor[] path = MapperUtils.findPropertyPath(resultType, metaData.getColumnLabel(i));
+        if (path != null) {
+          cachedPaths.add(path);
+        }
+        else {
+          cachedPaths.add(EMPTY_PATH);
+        }
+      }
+      
+      PropertyDescriptor[] path = cachedPaths.get(i);
+      if (path != EMPTY_PATH) {
+        setProperty(path, dest, rs, i);
       }
     }
     
     return dest;
   }
   
+
   
-  private void setProperty(MapperUtils.Ref ref, ResultSet rs, int columnIndex) {
+  private void setProperty(PropertyDescriptor[] path, Object dest, ResultSet rs, int columnIndex) {
     try {
-      Object dest = ref.getBean();
-      String propertyName = ref.getName();
-      PropertyDescriptor writeDescriptor = ref.getDescriptor();
+      for (int i = 0; i < path.length-1; i++) {
+        Object value = PropertyUtils.getProperty(dest, path[i].getName());
+        if (value == null) {
+          value = MapperUtils.create(path[i].getPropertyType());
+          PropertyUtils.setProperty(dest, path[i].getName(), value);
+        }
+        dest = value;
+      }
+      
+      setProperty(dest, path[path.length-1], rs, columnIndex);
+    }
+    catch (Exception ex) {
+      String columnName = null;
+      try { columnName = metaData.getColumnName(columnIndex); } catch (SQLException ignored) {}
+      throw new IllegalArgumentException("Could not set value of property '"+getPropertyRef(path)+"' from column '"+columnName, ex);
+    }
+  }
+
+  private String getPropertyRef(PropertyDescriptor[] path) {
+    StringBuilder ref = new StringBuilder();
+    String prefix = "";
+    for (PropertyDescriptor descriptor : path) {
+      ref.append(prefix).append(descriptor.getName());
+      prefix = ".";
+    }
+    return ref.toString();
+  }
+  
+  private void setProperty(Object dest, PropertyDescriptor writeDescriptor, ResultSet rs, int columnIndex) {
+    try {
+      String propertyName = writeDescriptor.getName();
       int sqlType = metaData.getColumnType(columnIndex);
       
       switch(sqlType) {
@@ -104,7 +151,7 @@ public class DefaultMapper<T> implements Mapper<T> {
     catch (Exception ex) {
       String columnName = null;
       try { columnName = metaData.getColumnName(columnIndex); } catch (SQLException ignored) {}
-      throw new IllegalArgumentException("Could not set value of property '"+ref.getName()+"' from column '"+columnName, ex);
+      throw new IllegalArgumentException("Could not set value of property '"+writeDescriptor.getName()+"' from column '"+columnName, ex);
     }
   }
   

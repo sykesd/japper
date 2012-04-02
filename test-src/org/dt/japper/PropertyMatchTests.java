@@ -1,6 +1,12 @@
 package org.dt.japper;
 
-import java.math.BigDecimal;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+import java.beans.PropertyDescriptor;
+
+import org.junit.Test;
 
 /*
  * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
@@ -35,47 +41,34 @@ import java.math.BigDecimal;
  * 
  */
 
-public class A {
+public class PropertyMatchTests {
 
-  private BigDecimal id;
-  
-  private String description;
-  
-  private Part part;
-
-  private Currency theCurrency;
-  
-  public BigDecimal getId() {
-    return id;
+  @Test
+  public void simpleMatchTest() throws Exception {
+    PropertyDescriptor[] path = PropertyMatcher.match(A.class, "ID");
+    assertNotNull(path);
+    assertEquals(1, path.length);
+    assertEquals("id", path[0].getName());
+    
+    path = PropertyMatcher.match(A.class, "DODGY");
+    assertNull(path);
+    
+    path = PropertyMatcher.match(A.class, "PART_DESCRIPTION");
+    assertNotNull(path);
+    assertEquals(2, path.length);
+    assertEquals("part", path[0].getName());
+    assertEquals("description", path[1].getName());
+    
+    path = PropertyMatcher.match(A.class, "THE_CURRENCY_DESCRIPTION");
+    assertNotNull(path);
+    assertEquals(2, path.length);
+    assertEquals("theCurrency", path[0].getName());
+    assertEquals("description", path[1].getName());
+    
+    path = PropertyMatcher.match(A.class, "THE_CURR_DESCRIPTION");
+    assertNotNull(path);
+    assertEquals(2, path.length);
+    assertEquals("theCurrency", path[0].getName());
+    assertEquals("description", path[1].getName());
   }
-
-  public void setId(BigDecimal id) {
-    this.id = id;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public Part getPart() {
-    return part;
-  }
-
-  public void setPart(Part part) {
-    this.part = part;
-  }
-
-  public Currency getTheCurrency() {
-    return theCurrency;
-  }
-
-  public void setTheCurrency(Currency theCurrency) {
-    this.theCurrency = theCurrency;
-  }
-  
-  
 }

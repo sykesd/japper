@@ -87,6 +87,23 @@ public class SimpleMapTest {
       ;
   
   @Test
+  public void mapPricesUsingDefaultMapper() throws Exception {
+    Connection conn = testData.connect();
+    
+    List<PartPriceModel> prices = Japper.query(conn, PartPriceModel.class, SQL_PART_PRICES+" /*-codeGen*/ ");
+    assertEquals(6, prices.size());
+    
+    PartPriceModel price = prices.get(0);
+    PartModel part = price.getPart();
+    assertEquals("123456", part.getPartno());
+    assertEquals("EUR", price.getCurrency().getCurrencyCode());
+    assertEquals("€", price.getCurrency().getCurrencySymbol());
+    assertEquals(0, BigDecimal.valueOf(100).compareTo(price.getPrice()));
+    
+    conn.close();
+  }
+  
+  @Test
   public void mapPrices() throws Exception {
     Connection conn = testData.connect();
     

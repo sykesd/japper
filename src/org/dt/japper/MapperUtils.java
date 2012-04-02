@@ -3,14 +3,7 @@ package org.dt.japper;
 import java.beans.PropertyDescriptor;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
-
-import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /*
  * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
@@ -48,98 +41,6 @@ import org.apache.commons.logging.LogFactory;
 
 public class MapperUtils {
 
-  private static final Log log = LogFactory.getLog(MapperUtils.class);
-  
-  public static class Ref {
-    private Object bean;
-    private String name;
-    private PropertyDescriptor descriptor;
-   
-    public Ref(Object bean, String propertyName, PropertyDescriptor descriptor) {
-      this.bean = bean;
-      this.name = propertyName;
-      this.descriptor = descriptor;
-    }
-    
-    public Object getBean() { return bean; }
-    
-    public String getName() { return name; }
-    
-    public PropertyDescriptor getDescriptor() { return descriptor; }
-  }
-  
-  
-  /**
-   * Find the property, possibly in an object graph from the column name
-   *
-   * We perform some simple name mangling of the given column name to turn it into a likely property name
-   * e.g. NAME -> name, FIRST_NAME -> firstName
-   * If no direct match is found then we check to see if bean contains a complex property with
-   * the first part of columnName
-   * e.g. STORE_STORENO -> store
-   * If one exists, we check for a matching property on the type of store that matches STORENO. If one is
-   * found, we create an instance of store and set the property on bean, and the returned Ref will be for
-   * (store, storeno).
-   * This process can occur recursively.
-   * 
-   * NOTE: This method has side-effects. It will possibly instantiate objects and set them on the bean, of
-   * objects referenced by bean.
-   *  
-   * @param bean the bean we want to set a property on
-   * @param columnName the column name which will be used to find the property to set
-   * @return a reference to the bean and property to set
-   */
-  public static Ref findPropertyInGraph(Object bean, String columnName) {
-    try {
-      // first look directly in the given bean
-      String propertyName = toLowerCamelCase(columnName);
-      if (PropertyUtils.isWriteable(bean, propertyName)) {
-        return new Ref(bean, propertyName, PropertyUtils.getPropertyDescriptor(bean, propertyName));
-      }
-      
-      // ok, we don't have a direct matching property - let's look for an object graph
-      // type situation
-      String[] parts = splitOnFirstWord(columnName);
-      if (parts[1] == null || parts[0].isEmpty()) {
-        // no graph type reference
-        return null;
-      }
-      
-      String complexPropertyName = toLowerCamelCase(parts[0]);
-      if (PropertyUtils.isWriteable(bean, complexPropertyName)) {
-        PropertyDescriptor descriptor = PropertyUtils.getPropertyDescriptor(bean, complexPropertyName);
-        if (isSimpleType(descriptor.getPropertyType())) {
-          // this is only a simple type - can't traverse the object graph
-          return null;
-        }
-        
-        boolean created = false;
-        Object refBean = PropertyUtils.getProperty(bean, complexPropertyName);
-        if (refBean == null) {
-          refBean = create(descriptor.getPropertyType());
-          created = true;
-        }
-        
-        Ref ref = findPropertyInGraph(refBean, parts[1]);
-        if (ref != null) {
-          if (created) {
-            // we had to create the object in order to set a property on it
-            // make sure we set the property on our parent bean
-            PropertyUtils.setProperty(bean, complexPropertyName, refBean);
-          }
-          return ref;
-        }
-      }
-    }
-    catch (Exception ex) {
-      log.debug("Error traversing object graph: "+columnName+" into "+bean.getClass().getName(), ex);
-    }
-    
-    return null;
-  }
-  
-  
-  
   /**
    * Find the path to the property we should set on the given target type
    * We perform some simple name mangling of the given column name to turn it into a likely property name
@@ -155,65 +56,7 @@ public class MapperUtils {
    * @return the path to the property, or null if no viable path can be found
    */
   public static <T> PropertyDescriptor[] findPropertyPath(Class<T> targetType, String columnName) {
-    List<PropertyDescriptor> path = findPropertyPath(targetType, columnName, new ArrayList<PropertyDescriptor>());
-    if (path.isEmpty()) {
-      return null;
-    }
-    
-    return path.toArray(new PropertyDescriptor[]{});
-  }
-  
-  private static <T> List<PropertyDescriptor> findPropertyPath(Class<T> targetType, String columnName, List<PropertyDescriptor> path) {
-    String propertyName = toLowerCamelCase(columnName);
-    PropertyDescriptor descriptor = getPropertyDescritpor(targetType, propertyName);
-    if (descriptor != null && descriptor.getWriteMethod() != null) {
-      path.add(descriptor);
-      return path;
-    }
-    
-    // ok, we don't have a direct matching property - let's look for an object graph
-    // type situation
-    String[] parts = splitOnFirstWord(columnName);
-    if (parts[1] == null || parts[0].isEmpty()) {
-      // no graph type reference
-      return Collections.emptyList();
-    }
-    
-    String complexPropertyName = toLowerCamelCase(parts[0]);
-    descriptor = getPropertyDescritpor(targetType, complexPropertyName);
-    if (descriptor != null && descriptor.getWriteMethod() != null) {
-      if (isSimpleType(descriptor.getPropertyType())) {
-        // this is only a simple type - can't traverse the object graph
-        return Collections.emptyList();
-      }
-      
-      path.add(descriptor);
-      return findPropertyPath(descriptor.getPropertyType(), parts[1], path);
-    }
-    
-    
-    return Collections.emptyList();
-  }
-  
-  
-  /**
-   * The Apache Commons PropertyUtils class has a method very similar to this,
-   * however it takes an object, not a class.
-   * 
-   * To avoid having to instantiate the object, we have implemented this version
-   * which takes the class we wish to inspect.
-   * 
-   * @param beanType the class of the bean we want to find the property in
-   * @param name the name of the property we are looking for
-   * @return the PropertyDescriptor for the given property, or null if it does not exist
-   */
-  private static <T> PropertyDescriptor getPropertyDescritpor(Class<T> beanType, String name) {
-    for (PropertyDescriptor descriptor : PropertyUtils.getPropertyDescriptors(beanType)) {
-      if (name.equals(descriptor.getName())) {
-        return descriptor;
-      }
-    }
-    return null;
+    return PropertyMatcher.match(targetType, columnName);
   }
   
   
