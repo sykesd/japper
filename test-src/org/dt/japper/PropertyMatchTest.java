@@ -41,7 +41,7 @@ import org.junit.Test;
  * 
  */
 
-public class PropertyMatchTests {
+public class PropertyMatchTest {
 
   @Test
   public void simpleMatchTest() throws Exception {
@@ -70,5 +70,10 @@ public class PropertyMatchTests {
     assertEquals(2, path.length);
     assertEquals("theCurrency", path[0].getName());
     assertEquals("description", path[1].getName());
+    
+    path = PropertyMatcher.match(A.class, "QTY");
+    assertNotNull(path);
+    assertEquals(1, path.length);
+    assertEquals("qty", path[0].getName());
   }
 }

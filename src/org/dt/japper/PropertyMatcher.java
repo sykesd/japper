@@ -64,6 +64,10 @@ public class PropertyMatcher {
       
       humpExpected = false;
     }
+
+    if (!path.matchOnEOS()) {
+      return null;
+    }
     
     List<PropertyDescriptor> thePath = path.buildPath();
     if (thePath == null || thePath.isEmpty()) {
@@ -118,6 +122,13 @@ public class PropertyMatcher {
       return ch == getAndConsumeChar();
     }
 
+    public boolean matchOnEOS() {
+      if (path != null) {
+        return filterPathOnEOS();
+      }
+      return isNameMatched();
+    }
+    
     public List<PropertyDescriptor> buildPath() {
       List<PropertyDescriptor> thePath = new ArrayList<PropertyDescriptor>();
       return buildPath(thePath);
@@ -151,6 +162,16 @@ public class PropertyMatcher {
       for (Iterator<Path> iter = path.iterator(); iter.hasNext();) {
         Path aPath = iter.next();
         if (!aPath.match(ch, humpExpected)) {
+          iter.remove();
+        }
+      }
+      return !path.isEmpty();
+    }
+    
+    private boolean filterPathOnEOS() {
+      for (Iterator<Path> iter = path.iterator(); iter.hasNext();) {
+        Path aPath = iter.next();
+        if (!aPath.matchOnEOS()) {
           iter.remove();
         }
       }

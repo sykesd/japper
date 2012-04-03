@@ -45,6 +45,10 @@ public class A {
 
   private Currency theCurrency;
   
+  private BigDecimal qty;
+  
+  private BigDecimal qtyMileage;
+  
   public BigDecimal getId() {
     return id;
   }
@@ -59,6 +63,22 @@ public class A {
 
   public void setDescription(String description) {
     this.description = description;
+  }
+
+  public BigDecimal getQty() {
+    return qty;
+  }
+
+  public void setQty(BigDecimal qty) {
+    this.qty = qty;
+  }
+
+  public BigDecimal getQtyMileage() {
+    return qtyMileage;
+  }
+
+  public void setQtyMileage(BigDecimal qtyMileage) {
+    this.qtyMileage = qtyMileage;
   }
 
   public Part getPart() {

@@ -37,8 +37,7 @@
   
   <target name="compile" depends="init,resolve">
     <javac srcdir="${source}" destdir="${classes}"
-           debug="${debug}"
-           optimize="${optimize}"
+           debug="on"
            deprecation="off">
       <classpath>
         <fileset dir="${lib}" includes="*.jar" />
