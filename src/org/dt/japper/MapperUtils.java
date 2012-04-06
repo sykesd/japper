@@ -87,59 +87,31 @@ public class MapperUtils {
     }
   }
 
-
   /**
-   * Convert the given string to lowerCamelCase
-   * Treat the _ as the word separator. Convert the first letter of all words
-   * from the 2nd word on to upper case
+   * Like String.trim(), but only removes trailing whitespace
    * 
-   * There are some special cases:
-   *    E_MAIL -> email, not eMail
-   *  
-   * @param s the string to convert to lowerCamelCase
-   * @return the string converted to lowerCamelCase
+   * @param s the string to trim
+   * @return the trimmed string
    */
-  public static String toLowerCamelCase(String s) {
-    if (s == null) return "";
-    s = s.toLowerCase();
-    s = s.replace("e_mail", "email");   // special handling for E_MAIL, since eMail looks silly
+  public static String trimRight(String s) {
+    if (s == null || s.isEmpty()) return s;
     
-    String[] parts = s.split("_");
-    
-    StringBuilder sb = new StringBuilder();
-    boolean first = true;
-    for (String part : parts) {
-      if (first) {
-        sb.append(part);
-        first = false;
-      }
-      else {
-        sb.append(part.substring(0, 1).toUpperCase()).append(part.substring(1));
+    int lastNonSpace = -1;
+    for (int index = s.length()-1; index >= 0; index--) {
+      char ch = s.charAt(index);
+      if (!Character.isWhitespace(ch)) {
+        lastNonSpace = index;
+        break;
       }
     }
     
-    return sb.toString();
-  }
-
-  /**
-   * Find the first occurrence of _ in the given string
-   * and split s at that point:
-   * e.g. PART_DESCRIPTION -> { PART, DESCRIPTION }
-   * PART -> { PART, null }
-   * PART_CURRENCY_DESCRIPTION -> { PART, CURRENCY_DESCRIPTION }
-   * _PART -> {"", PART}
-   * 
-   * @param s the string to split at the first occurrence of _
-   * @return s split into 2 parts at the first occurrency of _, the _ is not returned in either part
-   */
-  public static String[] splitOnFirstWord(String s) {
-    if (s == null) return new String[]{"", null};
-    
-    int underscorePos = s.indexOf('_');
-    if (underscorePos < 0) {
-      return new String[]{s, null};
+    if (lastNonSpace == -1) {
+      /*
+       * s contains only whitespace
+       */
+      return "";
     }
     
-    return new String[]{ s.substring(0, underscorePos), s.substring(underscorePos+1) };
+    return s.substring(0, lastNonSpace+1);
   }
 }

@@ -132,6 +132,9 @@ public class DefaultMapper<T> implements Mapper<T> {
       
       switch(sqlType) {
         case Types.CHAR:
+          setProperty(dest, propertyName, writeDescriptor.getPropertyType(), MapperUtils.trimRight(rs.getString(columnIndex)));
+          break;
+          
         case Types.VARCHAR:
         case Types.CLOB:
           setProperty(dest, propertyName, writeDescriptor.getPropertyType(), rs.getString(columnIndex));

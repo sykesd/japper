@@ -242,6 +242,15 @@ public class DynamicMapperFactory {
   }
   
   private static int buildConversion(StringBuilder source, PropertySetter ps, String tempName, String sourceTempName, int tempCounter) {
+    if (ps.writeType.equals(String.class) && ps.readType.equals(String.class)) {
+      /*
+       * No actual type conversion, but end up here if the read column is CHAR type 
+       * So we need to strip trailing space
+       */
+      source.append("    ").append(tempName).append(" = org.dt.japper.MapperUtils.trimRight(").append(sourceTempName).append(");\n");
+      return tempCounter;
+    }
+    
     if (ps.writeType.equals(java.sql.Timestamp.class) && ps.readType.equals(java.sql.Date.class) ) {
       source.append("    ").append(tempName).append(" = new java.sql.Timestamp(").append(sourceTempName).append(".getTime());\n");
       return tempCounter;
@@ -413,7 +422,7 @@ public class DynamicMapperFactory {
     }
     
     public boolean isNeedsConversion() { 
-      return !writeType.isAssignableFrom(readType);
+      return !writeType.isAssignableFrom(readType) || sqlType == Types.CHAR;
     }
   }
 }

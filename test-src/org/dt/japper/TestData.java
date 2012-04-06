@@ -92,7 +92,7 @@ public class TestData {
   private static String SQL_CURRENCY_TABLE =
         " CREATE TABLE currency ("
       + "     currency_code   VARCHAR(3) PRIMARY KEY"
-      + "   , currency_symbol VARCHAR(6)"
+      + "   , currency_symbol CHAR(6)"
       + "   , description     VARCHAR(60)"
       + " )"
       ;
