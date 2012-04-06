@@ -45,35 +45,60 @@ public class PropertyMatchTest {
 
   @Test
   public void simpleMatchTest() throws Exception {
-    PropertyDescriptor[] path = PropertyMatcher.match(A.class, "ID");
+    PropertyMatcher matcher = new PropertyMatcher(A.class);
+    
+    PropertyDescriptor[] path = matcher.match("ID", "A", "ID");
     assertNotNull(path);
     assertEquals(1, path.length);
     assertEquals("id", path[0].getName());
     
-    path = PropertyMatcher.match(A.class, "DODGY");
+    path = matcher.match("DODGY", "A", "DODGY");
     assertNull(path);
     
-    path = PropertyMatcher.match(A.class, "PART_DESCRIPTION");
+    path = matcher.match("PART_DESCRIPTION", "PART", "DESCRIPTION");
     assertNotNull(path);
     assertEquals(2, path.length);
     assertEquals("part", path[0].getName());
     assertEquals("description", path[1].getName());
     
-    path = PropertyMatcher.match(A.class, "THE_CURRENCY_DESCRIPTION");
+    path = matcher.match("THE_CURRENCY_DESCRIPTION", "CURRENCY", "DESCRIPTION");
     assertNotNull(path);
     assertEquals(2, path.length);
     assertEquals("theCurrency", path[0].getName());
     assertEquals("description", path[1].getName());
     
-    path = PropertyMatcher.match(A.class, "THE_CURR_DESCRIPTION");
+    path = matcher.match("THE_CURR_DESCRIPTION", "CURRENCY", "DESCRIPTION");
     assertNotNull(path);
     assertEquals(2, path.length);
     assertEquals("theCurrency", path[0].getName());
     assertEquals("description", path[1].getName());
     
-    path = PropertyMatcher.match(A.class, "QTY");
+    path = matcher.match("QTY", "A", "QTY");
     assertNotNull(path);
     assertEquals(1, path.length);
     assertEquals("qty", path[0].getName());
+    
+    path = matcher.match("QTY_MIL", "A", "QTY_MILEAGE");
+    assertNotNull(path);
+    assertEquals(1, path.length);
+    assertEquals("qtyMileage", path[0].getName());
+  }
+  
+  @Test
+  public void fancyMatchTest() throws Exception {
+    PropertyMatcher matcher = new PropertyMatcher(A.class);
+    
+    PropertyDescriptor[] path = matcher.match("CODE", "CURRENCY", "CODE");
+    assertNotNull(path);
+    assertEquals(3, path.length);
+    assertEquals("part", path[0].getName());
+    assertEquals("currency", path[1].getName());
+    assertEquals("code", path[2].getName());
+    
+    path = matcher.match("DESCRIPTION", "CURRENCY", "DESCRIPTION");
+    assertNotNull(path);
+    assertEquals(1, path.length);
+    assertEquals("description", path[0].getName());
+    
   }
 }

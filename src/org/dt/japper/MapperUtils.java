@@ -1,6 +1,5 @@
 package org.dt.japper;
 
-import java.beans.PropertyDescriptor;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -40,27 +39,6 @@ import java.util.Date;
 
 
 public class MapperUtils {
-
-  /**
-   * Find the path to the property we should set on the given target type
-   * We perform some simple name mangling of the given column name to turn it into a likely property name
-   * e.g. NAME -> name, FIRST_NAME -> firstName
-   * If no direct match is found then we check to see if targetType contains a complex property with
-   * the first part of columnName
-   * e.g. STORE_STORENO -> store
-   * If one exists, we check for a matching property on the type of store that matches STORENO and
-   * the returned path will be [store, storeno]
-   *  
-   * @param targetType the type on which to begin the search
-   * @param columnName the column to try and assign
-   * @return the path to the property, or null if no viable path can be found
-   */
-  public static <T> PropertyDescriptor[] findPropertyPath(Class<T> targetType, String columnName) {
-    return PropertyMatcher.match(targetType, columnName);
-  }
-  
-  
-  
   
   private static final Class<?>[] SIMPLE_TYPES = {
       int.class

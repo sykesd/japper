@@ -75,8 +75,8 @@ public class SimpleMapTest {
   }
 
   private static final String SQL_PART_PRICES =
-        "   SELECT part.partno part_partno, part.description part_description, currency.currency_code currency_currency_code"
-      + "        , currency.currency_symbol currency_currency_symbol, currency.description currency_description"
+        "   SELECT part.partno part_partno, part.description part_description, currency.currency_code"
+      + "        , currency.currency_symbol, currency.description currency_description"
       + "        , pricing.pricing_id pricing_pricing_id, pricing.description pricing_description"
       + "        , part_price.price "
       + "     FROM part_price"

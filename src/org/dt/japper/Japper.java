@@ -43,18 +43,20 @@ import org.apache.commons.logging.LogFactory;
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE. * @author Administrator
+ * POSSIBILITY OF SUCH DAMAGE. 
+ * 
+ * @author David Sykes
  * 
  * 
  */
 
 
 /**
- * This is basically a complete rip-off of the .NET Dapper mini-ORM
+ * This is basically a rip-off of the .NET Dapper mini-ORM
  * http://code.google.com/p/dapper-dot-net/
  * 
  * The idea is that the conversion from SQL query to object is "magic"
- * No configuration, attributes, or anything. It should just work
+ * No configuration, annotations, or anything. It should just work
  * 
  * We assume SQL is far better at doing the data stuff than anything we could
  * come up with, and we just worry about munging a result set into a nice object
@@ -92,6 +94,8 @@ public class Japper {
       
       profile.startQuery();
       ResultSetMetaData metaData = ps.getMetaData();
+      logMetaData(metaData);
+      
       ResultSet rs = ps.executeQuery();
       profile.stopQuery();
       
@@ -235,6 +239,17 @@ public class Japper {
     return !sql.contains("/*-codeGen*/");
   }
   
+  
+  
+  private static void logMetaData(ResultSetMetaData metaData) throws SQLException {
+    if (!log.isDebugEnabled()) return;
+    
+    log.debug("ResultSet Meta Data:");
+    for (int i = 1; i <= metaData.getColumnCount(); i++) {
+      log.debug("Column "+i+": "+metaData.getTableName(i)+"."+metaData.getColumnName(i)+" as "+metaData.getColumnLabel(i)+", type "+metaData.getColumnTypeName(i)+" ("+metaData.getColumnType(i)+")");
+    }
+  }
+
   
   private static class Profile {
     private Class<?> type;

@@ -143,9 +143,10 @@ public class DynamicMapperFactory {
     Map<String, String> graphGuardMap = new TreeMap<String, String>(new GraphGuardComparator());
     StringBuilder setterSource = new StringBuilder();
     
+    PropertyMatcher matcher = new PropertyMatcher(resultType);
+    
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
-      String columnName = metaData.getColumnLabel(i);
-      PropertyDescriptor[] path = MapperUtils.findPropertyPath(resultType, columnName);
+      PropertyDescriptor[] path = matcher.match(metaData.getColumnLabel(i), metaData.getTableName(i), metaData.getColumnName(i));
       if (path != null) {
         tempCounter = buildPropertySetter(setterSource, graphGuardMap, i, metaData, path, tempCounter);
       }

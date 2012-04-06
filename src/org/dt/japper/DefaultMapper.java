@@ -67,9 +67,15 @@ public class DefaultMapper<T> implements Mapper<T> {
   public T map(ResultSet rs) throws SQLException {
     T dest = create(resultType);
     
+    PropertyMatcher matcher = null;
+    
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
       if (cachedPaths.size() <= i) {
-        PropertyDescriptor[] path = MapperUtils.findPropertyPath(resultType, metaData.getColumnLabel(i));
+        if (matcher == null) {
+          matcher = new PropertyMatcher(resultType);
+        }
+        
+        PropertyDescriptor[] path = matcher.match(metaData.getColumnLabel(i), metaData.getTableName(i), metaData.getColumnName(i));
         if (path != null) {
           cachedPaths.add(path);
         }
