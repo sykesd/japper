@@ -3,7 +3,6 @@ package org.dt.japper;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /*
  * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
@@ -40,13 +39,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DynamicMapper {
 
+  private static final int MAX_CACHED_MAPPERS = 100;
+  
   /*
    * This is the cache of the generated mappers, which means we only have to generate them
-   * once for each query. However, this cache only ever grows. It might make sense to try
-   * and use some form of LRU cache to limit the amount of memory used here
+   * once for each query. We only ever keep up to MAX_CACHED_MAPPERS in the cache. 
+   * TODO Think about a way to allow configuration of this max. entry
    * 
    */
-  private static Map<Key, Mapper<?>> mapperCache = new ConcurrentHashMap<Key, Mapper<?>>();
+  private static Map<Key, Mapper<?>> mapperCache = new LruCache<Key, Mapper<?>>(MAX_CACHED_MAPPERS);
 
   /**
    * Get a Mapper<T> implementation that can map the result of the given SQL (meta data in metaData)

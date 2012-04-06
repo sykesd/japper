@@ -104,7 +104,7 @@ public class DynamicMapperFactory {
   private static CtClass createClass() {
     try {
       CtClass intf = CLASS_POOL.get(Mapper.class.getName());
-      CtClass impl = CLASS_POOL.makeClass(makeNewClassName());
+      CtClass impl = getClassPool().makeClass(makeNewClassName());
       impl.addInterface(intf);
       return impl;
     }
@@ -113,6 +113,22 @@ public class DynamicMapperFactory {
     }
   }
 
+  private static Integer classCounter = 0;
+  private static final int CLASS_POOL_REUSE_COUNTER = 100;
+  
+  private static ClassPool mapperClassPool = new ClassPool(CLASS_POOL);
+  
+  private static ClassPool getClassPool() {
+    synchronized (classCounter) {
+      classCounter++;
+      if (classCounter > CLASS_POOL_REUSE_COUNTER) {
+        classCounter = 1;
+        mapperClassPool = new ClassPool(CLASS_POOL);
+      }
+      return mapperClassPool;
+    }
+  }
+  
   /**
    * Build the method body to convert the query results described by metaData to instances
    * of resultType.
