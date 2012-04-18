@@ -123,6 +123,29 @@ public class Japper {
     }
   }
   
+  
+  public static int execute(String sql, Object...params) {
+    return execute(threadConnection.get(), sql, params);
+  }
+  
+  public static int execute(Connection conn, String sql, Object...params) {
+    Profile profile = new Profile(int.class, sql);
+    
+    PreparedStatement ps = null;
+    try {
+      ps = prepareSql(profile, conn, sql, params);
+      return ps.executeUpdate();
+    }
+    catch (SQLException sqlEx) {
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
+    }
+  }
+  
+  
+  
   private static PreparedStatement prepareSql(Profile profile, Connection conn, String sql, Object...params) throws SQLException {
     profile.startPrep();
     ParameterParser parser = new ParameterParser(sql).parse();
