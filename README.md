@@ -12,7 +12,7 @@ Where we are coming from:
 
 The goals of the project are:
 
-* Zero (or as close to) configuration as possible
+* Zero configuration, or as close to zero as possible
 * Avoid N+1 query problems
 * Be a library, not a framework - i.e. impose as little restrictions as possible on the objects used
 
