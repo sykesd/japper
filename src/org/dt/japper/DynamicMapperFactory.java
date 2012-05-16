@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
@@ -64,15 +65,6 @@ public class DynamicMapperFactory {
 
   private static final Log log = LogFactory.getLog(Japper.class);
   
-  /*
-   * TODO There is a potential memory leak here, since no class
-   * created by this pool will ever get unloaded (garbage collected)
-   * We really need to gate access to the pool via a getter that
-   * also periodically creates a new pool
-   * 
-   */
-  private static final ClassPool CLASS_POOL = new ClassPool(true);
-  
   @SuppressWarnings("unchecked")
   public static <T> Mapper<T> create(Class<T> resultType, ResultSetMetaData metaData) throws SQLException {
     CtClass impl = createClass();
@@ -103,8 +95,9 @@ public class DynamicMapperFactory {
   
   private static CtClass createClass() {
     try {
-      CtClass intf = CLASS_POOL.get(Mapper.class.getName());
-      CtClass impl = getClassPool().makeClass(makeNewClassName());
+      ClassPool classPool = getClassPool();
+      CtClass intf = classPool.get(Mapper.class.getName());
+      CtClass impl = classPool.makeClass(makeNewClassName());
       impl.addInterface(intf);
       return impl;
     }
@@ -113,17 +106,18 @@ public class DynamicMapperFactory {
     }
   }
 
-  private static Integer classCounter = 0;
   private static final int CLASS_POOL_REUSE_COUNTER = 100;
+  private static Integer classCounter = CLASS_POOL_REUSE_COUNTER;
   
-  private static ClassPool mapperClassPool = new ClassPool(CLASS_POOL);
+  private static ClassPool mapperClassPool = null;
   
   private static ClassPool getClassPool() {
     synchronized (classCounter) {
       classCounter++;
       if (classCounter > CLASS_POOL_REUSE_COUNTER) {
         classCounter = 1;
-        mapperClassPool = new ClassPool(CLASS_POOL);
+        mapperClassPool = new ClassPool(true);
+        mapperClassPool.insertClassPath(new ClassClassPath(Mapper.class));
       }
       return mapperClassPool;
     }
