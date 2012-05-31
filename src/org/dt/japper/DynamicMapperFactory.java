@@ -374,6 +374,7 @@ public class DynamicMapperFactory {
           break;
           
         case Types.TIMESTAMP:
+        case -102:    // id of the Oracle TIMESTAMP WITH LOCAL TIME ZONE data type
           readerMethod = "getTimestamp";
           readType = Timestamp.class;
           break;

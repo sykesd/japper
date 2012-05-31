@@ -156,7 +156,7 @@ public class Japper {
     /*
      * For some testing over a remote connection, we want to make sure the query results
      * get loaded in a single round-trip
-     * 200 is a good size for these tests
+     * 500 is a good size for these tests
      * 
      * TODO think a bit more about whether this is a good default, or whether this
      * needs to be a parameter
