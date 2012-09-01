@@ -70,6 +70,20 @@ public class Japper {
   
   private static final ThreadLocal<Connection> threadConnection = new ThreadLocal<Connection>();
   
+  /**
+   * Set the connection the current thread should use when calling the methods that do not
+   * take a java.sql.Connection as the first parameter.
+   * 
+   * To clear the current thread's connection, call this method passing in null.
+   * 
+   * The use case here is that you would have some container-type construct that would
+   * get a database connection from a connection pool for the current thread, set it on
+   * the Japper class, and then call some object to do work. This object can then call
+   * the Japper methods that do not take a connection as the first parameter.
+   * 
+   * @param conn the connection this thread should use
+   * @return the connection just assigned
+   */
   public static Connection setThreadConnection(Connection conn) {
     threadConnection.set(conn);
     return conn;
@@ -281,12 +295,10 @@ public class Japper {
     // For now we leave it up to the caller. Code generation is on by default, and can be disabled
     // via a specific comment inside the SQL query
     
-    if (canUseDynamicMapper(sql)) {
-      // Use a dynamically generated, optimized mapper object
-      return DynamicMapper.get(resultType, sql, metaData);
+    if (isUseGeneratedMapper(sql)) {
+      return GeneratedMapper.get(resultType, sql, metaData);
     }
 
-    // this is the code to create the default, reflective Mapper
     return new DefaultMapper<T>(resultType, metaData);
   }
   
@@ -296,9 +308,9 @@ public class Japper {
    * in the query
    * 
    * @param sql the sql check
-   * @return true if a dynamically generated mapper can be used, false otherwise
+   * @return true if a generated mapper can be used, false otherwise
    */
-  private static boolean canUseDynamicMapper(String sql) {
+  private static boolean isUseGeneratedMapper(String sql) {
     return !sql.contains("/*-codeGen*/");
   }
   
