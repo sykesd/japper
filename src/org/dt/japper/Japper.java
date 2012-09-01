@@ -124,17 +124,57 @@ public class Japper {
   }
   
   
+  
+  public static QueryResult query(String sql, Object...params) {
+    return query(threadConnection.get(), sql, params);
+  }
+  
+  public static QueryResult query(Connection conn, String sql, Object...params) {
+    Profile profile = new Profile(ResultSet.class, sql);
+    
+    PreparedStatement ps = null;
+    try {
+      ps = prepareSql(profile, conn, sql, params);
+      
+      profile.startQuery();
+      ResultSetMetaData metaData = ps.getMetaData();
+      logMetaData(metaData);
+      
+      ResultSet rs = ps.executeQuery();
+      profile.stopQuery();
+      
+
+      profile.end();
+      profile.log();
+      
+      return new QueryResult(ps, rs);
+    }
+    catch (SQLException sqlEx) {
+      try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
+      throw new JapperException(sqlEx);
+    }
+  }
+  
+  
   public static int execute(String sql, Object...params) {
     return execute(threadConnection.get(), sql, params);
   }
   
   public static int execute(Connection conn, String sql, Object...params) {
-    Profile profile = new Profile(int.class, sql);
+    Profile profile = new Profile("statement", int.class, sql);
     
     PreparedStatement ps = null;
     try {
       ps = prepareSql(profile, conn, sql, params);
-      return ps.executeUpdate();
+
+      profile.startQuery();
+      int rowsAffected = ps.executeUpdate();
+      profile.stopQuery();
+      
+      profile.end();
+      profile.log();
+      
+      return rowsAffected;
     }
     catch (SQLException sqlEx) {
       throw new JapperException(sqlEx);
@@ -214,11 +254,11 @@ public class Japper {
     else if (value instanceof Float) {
       ps.setFloat(index, (Float) value);
     }
-    else if (value instanceof Date) {
-      ps.setDate(index, new java.sql.Date(((Date) value).getTime()));
-    }
     else if (value instanceof Timestamp) {
       ps.setTimestamp(index, (Timestamp) value);
+    }
+    else if (value instanceof Date) {
+      ps.setDate(index, new java.sql.Date(((Date) value).getTime()));
     }
   }
 
@@ -275,6 +315,8 @@ public class Japper {
 
   
   private static class Profile {
+    private String dmlType;
+    
     private Class<?> type;
     
     private long globalStart;
@@ -286,6 +328,7 @@ public class Japper {
     private long queryStart;
     private long queryEnd;
     
+    private boolean mapped;
     private long mapStart;
     private long mapEnd;
     
@@ -306,6 +349,11 @@ public class Japper {
     private List<String> values = new ArrayList<String>();
     
     public Profile(Class<?> type, String originalSql) {
+      this("query", type, originalSql);
+    }
+    
+    public Profile(String dmlType, Class<?> type, String originalSql) {
+      this.dmlType = dmlType;
       this.type = type;
       this.originalSql = originalSql;
       globalStart = System.nanoTime();
@@ -326,7 +374,10 @@ public class Japper {
     
     public void stopQuery() { queryEnd = System.nanoTime(); }
     
-    public void startMap() { mapStart = mapperCreationStart = System.nanoTime(); }
+    public void startMap() {
+      mapped = true;
+      mapStart = mapperCreationStart = System.nanoTime(); 
+    }
     
     public void stopMapperCreation() { mapperCreationEnd = System.nanoTime(); }
     
@@ -349,7 +400,7 @@ public class Japper {
     public void end() { globalEnd = System.nanoTime(); }
     
     public void log() {
-      log.info("query("+type.getName()+"):");
+      log.info(dmlType+"("+type.getName()+"):");
       log.info("  original: "+originalSql);
       log.info("  executed: "+sql);
       if (log.isDebugEnabled() && !names.isEmpty()) {
@@ -359,11 +410,13 @@ public class Japper {
       }
       log.info("  preparation: "+nicify(prepStart, prepEnd));
       log.info("        query: "+nicify(queryStart, queryEnd));
-      log.info("          map: "+nicify(mapStart, mapEnd));
-      log.info("                     row count: "+rowCount);
-      log.info("               mapper creation: "+nicify(mapperCreationStart, mapperCreationEnd));
-      log.info("                     first row: "+nicify(mapFirstRowStart, mapFirstRowEnd));
-      log.info("                      avg. row: "+nicify((long) avgPerRow()));
+      if (mapped) {
+        log.info("          map: "+nicify(mapStart, mapEnd));
+        log.info("                     row count: "+rowCount);
+        log.info("               mapper creation: "+nicify(mapperCreationStart, mapperCreationEnd));
+        log.info("                     first row: "+nicify(mapFirstRowStart, mapFirstRowEnd));
+        log.info("                      avg. row: "+nicify((long) avgPerRow()));
+      }
       log.info("Total: "+nicify(globalStart, globalEnd));
     }
 
