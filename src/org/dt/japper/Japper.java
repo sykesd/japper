@@ -1,6 +1,7 @@
 package org.dt.japper;
 
 import java.math.BigDecimal;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -198,7 +199,74 @@ public class Japper {
     }
   }
   
+  public static OutParameter out(Class<?> type) { return new OutParameter(type); }
   
+  public static CallResult call(String sql, Object...params) {
+    return call(threadConnection.get(), sql, params);
+  }
+  
+  public static CallResult call(Connection conn, String sql, Object...params) {
+    Profile profile = new Profile("call", int.class, sql);
+    
+    CallableStatement cs = null;
+    try {
+      CallResult callResult = new CallResult();
+      cs = prepareCallSql(profile, conn, callResult, sql, params);
+
+      profile.startQuery();
+      cs.execute();
+      profile.stopQuery();
+      
+      profile.startMap();
+      callResult.readResults(cs);
+      profile.stopMap();
+      
+      profile.end();
+      profile.log();
+      
+      return callResult;
+    }
+    catch (SQLException sqlEx) {
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      try { if (cs != null) cs.close(); } catch (SQLException ignored) {}
+    }
+  }
+
+  private static CallableStatement prepareCallSql(Profile profile, Connection conn, CallResult callResult, String sql, Object...params) throws SQLException {
+    profile.startPrep();
+    ParameterParser parser = new ParameterParser(sql).parse();
+    
+    profile.setSql(parser.getSql());
+    CallableStatement cs = conn.prepareCall(parser.getSql()); 
+    
+    if (params != null && params.length > 0) {
+      if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
+      
+      for (int i = 0; i < params.length; i+=2) {
+        String name = (String) params[i];
+        Object value = params[i+1];
+        
+        profile.setParam( name, (value == null ? "(null)" : value.toString()) );
+        
+        List<Integer> indexes = parser.getIndexes(name);
+        if (indexes != null) {
+          if (value instanceof OutParameter) {
+            if (indexes.size() != 1) throw new IllegalArgumentException("OUT parameter "+name+" referenced multiple times!");
+            OutParameter outP = (OutParameter) value;
+            callResult.register(cs, name, outP.getType(), indexes.get(0));
+          }
+          else {
+            setParameter(cs, value, indexes);
+          }
+        }
+      }
+    }
+    
+    profile.stopPrep();
+    return cs;
+  }
   
   private static PreparedStatement prepareSql(Profile profile, Connection conn, String sql, Object...params) throws SQLException {
     profile.startPrep();
@@ -424,6 +492,8 @@ public class Japper {
       log.info("        query: "+nicify(queryStart, queryEnd));
       if (mapped) {
         log.info("          map: "+nicify(mapStart, mapEnd));
+      }
+      if (mapperCreationEnd != 0L) {
         log.info("                     row count: "+rowCount);
         log.info("               mapper creation: "+nicify(mapperCreationStart, mapperCreationEnd));
         log.info("                     first row: "+nicify(mapFirstRowStart, mapFirstRowEnd));

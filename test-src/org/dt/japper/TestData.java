@@ -57,6 +57,8 @@ public class TestData {
   public void create() throws SQLException {
     Connection conn = connect();
     
+    createTable(conn, SQL_STORED_PROCEDURE);
+    
     createTable(conn, SQL_PRICING_TABLE);
     insertData(conn, SQL_INSERT_PRICING, DATA_PRICING);
     
@@ -72,6 +74,13 @@ public class TestData {
     conn.close();
   }
   
+  private static String SQL_STORED_PROCEDURE =
+        " CREATE PROCEDURE do_something(name VARCHAR(50), OUT mangled VARCHAR(50), OUT name_rank NUMERIC(10))"
+      + " BEGIN ATOMIC"
+      + "   SET mangled = name;"
+      + "   SET name_rank = 5;"
+      + " END"
+      ;
   
   private static String SQL_PRICING_TABLE =
         " CREATE TABLE pricing ("
