@@ -234,6 +234,39 @@ public class Japper {
     }
   }
 
+  public static <T> T call(Class<T> targetType, String sql, Object...params) {
+    return call(threadConnection.get(), targetType, sql, params);
+  }
+  
+  public static <T> T call(Connection conn, Class<T> targetType, String sql, Object...params) {
+    Profile profile = new Profile("call", int.class, sql);
+    
+    CallableStatement cs = null;
+    try {
+      CallResult callResult = new CallResult();
+      cs = prepareCallSql(profile, conn, callResult, sql, params);
+
+      profile.startQuery();
+      cs.execute();
+      profile.stopQuery();
+      
+      profile.startMap();
+      T result = callResult.mapResults(cs, targetType);
+      profile.stopMap();
+      
+      profile.end();
+      profile.log();
+      
+      return result;
+    }
+    catch (SQLException sqlEx) {
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      try { if (cs != null) cs.close(); } catch (SQLException ignored) {}
+    }
+  }
+  
   private static CallableStatement prepareCallSql(Profile profile, Connection conn, CallResult callResult, String sql, Object...params) throws SQLException {
     profile.startPrep();
     ParameterParser parser = new ParameterParser(sql).parse();
@@ -370,7 +403,6 @@ public class Japper {
     return new DefaultMapper<T>(resultType, metaData);
   }
   
-
   /**
    * Check to see if the caller put in the Japper hint to disable code gen
    * in the query

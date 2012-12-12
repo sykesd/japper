@@ -30,4 +30,20 @@ public class SimpleStoredProcedureTest {
     
     conn.close();
   }
+  
+  @Test
+  public void callWithTargetTypeTest() throws Exception {
+    Connection conn = testData.connect();
+    
+    ProcResult result = Japper.call(conn, ProcResult.class, SQL_CALL, "NAME", "something", "MANGLED", out(String.class), "NAME_RANK", out(BigDecimal.class));
+    assertEquals(new String("something"), result.getMangled());
+    assertEquals(new BigDecimal(5), result.getNameRank());
+    
+    // Do it again so we can see the 2nd time performce
+    result = Japper.call(conn, ProcResult.class, SQL_CALL, "NAME", "something", "MANGLED", out(String.class), "NAME_RANK", out(BigDecimal.class));
+    assertEquals(new String("something"), result.getMangled());
+    assertEquals(new BigDecimal(5), result.getNameRank());
+    
+    conn.close();
+  }
 }

@@ -1,5 +1,6 @@
 package org.dt.japper;
 
+import java.beans.PropertyDescriptor;
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
 import java.sql.SQLException;
@@ -10,6 +11,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.beanutils.PropertyUtils;
 
 public class CallResult {
 
@@ -34,6 +37,32 @@ public class CallResult {
   void readResults(CallableStatement cs) throws SQLException {
     for (Parameter p : parameters) {
       setValue(cs, p); 
+    }
+  }
+  
+  <T> T mapResults(CallableStatement cs, Class<T> targetType) {
+    PropertyMatcher matcher = new PropertyMatcher(targetType);
+    
+    T result = MapperUtils.create(targetType);
+    
+    for (Parameter p : parameters) {
+      PropertyDescriptor[] path = matcher.match(p.getName(), null, null);
+      if (path != null && path.length == 1) {
+        setValue(cs, p, path[0], result);
+      }
+    }
+    
+    return result;
+  }
+  
+
+  private void setValue(CallableStatement cs, Parameter p, PropertyDescriptor pd, Object result) {
+    try {
+      setValue(cs, p);
+      PropertyUtils.setProperty(result, pd.getName(), valueMap.get(p.getName()));
+    }
+    catch (Exception ex) {
+      throw new IllegalArgumentException("Could not set property '"+pd.getName()+"' on type "+result.getClass().getName()+" from parameter "+p.getName(), ex);
     }
   }
   
@@ -84,7 +113,7 @@ public class CallResult {
     
     throw new IllegalArgumentException("Unsupported OUT parameter type: "+type.getName());
   }
-  
+
   private static class Parameter {
     private final int index;
     private final Class<?> type;
