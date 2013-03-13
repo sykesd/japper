@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.beanutils.PropertyUtils;
+import org.dt.japper.lob.BlobReader;
 
 /*
  * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
@@ -155,6 +156,10 @@ public class DefaultMapper<T> implements Mapper<T> {
           setProperty(dest, propertyName, writeDescriptor.getPropertyType(), rs.getTimestamp(columnIndex));
           break;
           
+        case Types.BLOB:
+          setProperty(dest, propertyName, writeDescriptor.getPropertyType(), BlobReader.read(rs, columnIndex));
+          break;
+          
       }
     }
     catch (Exception ex) {
@@ -235,6 +240,23 @@ public class DefaultMapper<T> implements Mapper<T> {
    * @param value the value we are setting the property to
    */
   private void setProperty(Object dest, String propertyName, Class<?> writeType, Timestamp value) {
+    try {
+      PropertyUtils.setProperty(dest, propertyName, value);
+    }
+    catch (Exception ex) {
+      throw new IllegalArgumentException("Could not set property '"+propertyName+"' from BigDecimal value", ex);
+    }
+  }
+  
+  /**
+   * Set the property value from a byte[]
+   * 
+   * @param dest the object to set the value on
+   * @param propertyName the property to set the value on
+   * @param writeType the type of the property we are setting
+   * @param value the value we are setting the property to
+   */
+  private void setProperty(Object dest, String propertyName, Class<?> writeType, byte[] value) {
     try {
       PropertyUtils.setProperty(dest, propertyName, value);
     }

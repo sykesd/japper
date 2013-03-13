@@ -204,7 +204,10 @@ public class MapperCodeGenerator {
   private static int buildPropertySetter(StringBuilder source, Map<String,String> graphGuardMap, int columnIndex, ResultSetMetaData metaData, PropertyDescriptor[] path, int tempCounter) throws SQLException {
     PropertySetter ps = new PropertySetter(columnIndex, metaData, path, buildReference(path, graphGuardMap));
     
-    if (!ps.isNullable() && !ps.isNeedsConversion()) {
+    if (ps.isBlob()) {
+      source.append("    ").append(ps.reference).append('.').append(ps.writerMethod).append("( ").append(ps.readerMethod).append("(").append("rs, ").append(columnIndex).append(") );\n");
+    }
+    else if (!ps.isNullable() && !ps.isNeedsConversion()) {
       source.append("    ").append(ps.reference).append('.').append(ps.writerMethod).append("( rs.").append(ps.readerMethod).append("(").append(columnIndex).append(") );\n");
     }
     else {
@@ -422,6 +425,11 @@ public class MapperCodeGenerator {
           readType = BigDecimal.class;
           break;
           
+        case Types.BLOB:
+          readerMethod = "org.dt.japper.blob.BlobReader.read";
+          readType = byte[].class;
+          break;
+          
         default:
           readerMethod = null;
           readType = null;
@@ -432,7 +440,9 @@ public class MapperCodeGenerator {
       return !readType.isPrimitive() && nullable;
     }
     
-    public boolean isNeedsConversion() { 
+    public boolean isBlob() { return sqlType == Types.BLOB; }
+    
+    public boolean isNeedsConversion() {
       return !writeType.isAssignableFrom(readType) || sqlType == Types.CHAR;
     }
   }
