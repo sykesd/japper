@@ -66,7 +66,13 @@ public class ParameterParser {
     return this;
   }
   
-  public List<Integer> getIndexes(String name) { return Collections.unmodifiableList(paramMap.get(name.toLowerCase())); }
+  public List<Integer> getIndexes(String name) {
+    List<Integer> indexes = paramMap.get(name.toLowerCase());
+    if (indexes == null) {
+      return null;
+    }
+    return Collections.unmodifiableList(indexes); 
+  }
   
   public String getSql() { return resultSql; }
   
