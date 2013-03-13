@@ -426,7 +426,7 @@ public class MapperCodeGenerator {
           break;
           
         case Types.BLOB:
-          readerMethod = "org.dt.japper.blob.BlobReader.read";
+          readerMethod = "org.dt.japper.lob.BlobReader.read";
           readType = byte[].class;
           break;
           

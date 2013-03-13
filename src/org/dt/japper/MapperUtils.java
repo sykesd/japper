@@ -53,6 +53,7 @@ public class MapperUtils {
     , String.class
     , Date.class
     , Timestamp.class
+    , byte[].class
   };
   
   public static boolean isSimpleType(Class<?> type) {
