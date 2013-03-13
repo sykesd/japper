@@ -1,5 +1,7 @@
 package org.dt.japper;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -12,6 +14,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -302,6 +305,37 @@ public class Japper {
       try { if (cs != null) cs.close(); } catch (SQLException ignored) {}
     }
   }
+  
+  
+  private static String version = null;
+  
+  public static String getVersion() {
+    if (version != null) return version;
+    
+    try {
+      Properties p = new Properties();
+      InputStream in = Japper.class.getResourceAsStream("version.properties");
+      if (in != null) {
+        try {
+          p.load(in);
+          version = p.getProperty("version");
+        }
+        finally {
+          try { in.close(); } catch (IOException ignored) {}
+        }
+      }
+    }
+    catch (Exception ignored) {}
+    
+    if (version == null) {
+      version = "$development$";
+    }
+    
+    return version;
+  }
+  
+  
+  
   
   private static CallableStatement prepareCallSql(Profile profile, Connection conn, CallResult callResult, String sql, Object...params) throws SQLException {
     profile.startPrep();

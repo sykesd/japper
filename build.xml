@@ -10,7 +10,7 @@
     <property name="lib" value="${basedir}/lib" />
     <property name="test-lib" value="${basedir}/lib-test" />
     
-    <property name="version" value="0.3-SNAPSHOT" />
+    <property name="version" value="0.4-SNAPSHOT" />
   	
   	<property name="product-jar" value="${basedir}/${ant.project.name}-${version}.jar" />
   </target>
@@ -36,6 +36,8 @@
   </target>
   
   <target name="compile" depends="init,resolve">
+  	<replace file="${source}/org/dt/japper/Japper.java" token="@version@" value="${version}" />
+  	
     <javac srcdir="${source}" destdir="${classes}"
            debug="on"
            deprecation="off">
@@ -43,6 +45,10 @@
         <fileset dir="${lib}" includes="*.jar" />
       </classpath>
     </javac>
+  	
+  	<propertyfile file="${classes}/org/dt/japper/version.properties">
+  		<entry key="version" value="${version}" />
+  	</propertyfile>
   </target>
   
   <target name="compile-tests" depends="init,compile,resolve">
