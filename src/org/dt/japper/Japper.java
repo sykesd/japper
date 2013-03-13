@@ -97,7 +97,16 @@ public class Japper {
     return query(threadConnection.get(), resultType, sql, params);
   }
   
-  
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType
+   * 
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   */
   public static <T> List<T> query(Connection conn, Class<T> resultType, String sql, Object...params) {
     Profile profile = new Profile(resultType, sql);
     
@@ -136,6 +145,33 @@ public class Japper {
     finally {
       try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
     }
+  }
+  
+
+  public static <T> T queryOne(Class<T> resultType, String sql, Object...params) {
+    return queryOne(getThreadConnection(), resultType, sql, params);
+  }
+  
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType. Return only the first result returned.
+   * 
+   * NOTE: at present this implementation of this is very naive. It simply calls query()
+   * and then returns the first element of the returned list. It is assumed the caller
+   * is not issuing a query that returns thousands of rows and then only wants the first one
+   * 
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
+   */
+  public static <T> T queryOne(Connection conn, Class<T> resultType, String sql, Object...params) {
+    List<T> results = query(conn, resultType, sql, params);
+    if (results.size() > 0) {
+      return results.get(0);
+    }
+    return null;
   }
   
   

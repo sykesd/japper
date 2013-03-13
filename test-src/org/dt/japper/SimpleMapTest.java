@@ -74,6 +74,17 @@ public class SimpleMapTest {
     conn.close();
   }
 
+  @Test
+  public void mapOnePart() throws Exception {
+    Connection conn = testData.connect();
+    
+    PartModel part = Japper.queryOne(conn, PartModel.class, SQL_PARTS);
+    assertEquals("123456", part.getPartno());
+    assertEquals("FAB", part.getPartType());
+    
+    conn.close();
+  }
+
   private static final String SQL_PART_PRICES =
         "   SELECT part.partno part_partno, part.description part_description, currency.currency_code"
       + "        , currency.currency_symbol, currency.description currency_description"
