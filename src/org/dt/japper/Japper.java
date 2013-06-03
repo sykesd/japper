@@ -59,10 +59,10 @@ import org.apache.commons.logging.LogFactory;
 /**
  * This is basically a rip-off of the .NET Dapper mini-ORM
  * http://code.google.com/p/dapper-dot-net/
- * 
+ * <p>
  * The idea is that the conversion from SQL query to object is "magic"
  * No configuration, annotations, or anything. It should just work
- * 
+ * <p>
  * We assume SQL is far better at doing the data stuff than anything we could
  * come up with, and we just worry about munging a result set into a nice object
  * for us to work with
@@ -71,35 +71,6 @@ import org.apache.commons.logging.LogFactory;
 public class Japper {
   
   private static final Log log = LogFactory.getLog(Japper.class);
-  
-  
-  private static final ThreadLocal<Connection> threadConnection = new ThreadLocal<Connection>();
-  
-  /**
-   * Set the connection the current thread should use when calling the methods that do not
-   * take a java.sql.Connection as the first parameter.
-   * 
-   * To clear the current thread's connection, call this method passing in null.
-   * 
-   * The use case here is that you would have some container-type construct that would
-   * get a database connection from a connection pool for the current thread, set it on
-   * the Japper class, and then call some object to do work. This object can then call
-   * the Japper methods that do not take a connection as the first parameter.
-   * 
-   * @param conn the connection this thread should use
-   * @return the connection just assigned
-   */
-  public static Connection setThreadConnection(Connection conn) {
-    threadConnection.set(conn);
-    return conn;
-  }
-  
-  public static Connection getThreadConnection() { return threadConnection.get(); }
-  
-  
-  public static <T> List<T> query(Class<T> resultType, String sql, Object...params) {
-    return query(threadConnection.get(), resultType, sql, params);
-  }
   
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
@@ -152,18 +123,14 @@ public class Japper {
   }
   
 
-  public static <T> T queryOne(Class<T> resultType, String sql, Object...params) {
-    return queryOne(getThreadConnection(), resultType, sql, params);
-  }
-  
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
    * resultType. Return only the first result returned.
-   * 
+   * <p>
    * NOTE: at present this implementation of this is very naive. It simply calls query()
    * and then returns the first element of the returned list. It is assumed the caller
    * is not issuing a query that returns thousands of rows and then only wants the first one
-   * 
+   * <p>
    * @param conn the connection to execute the query on
    * @param resultType the result to map the query results to
    * @param sql the SQL statement to execute
@@ -180,10 +147,15 @@ public class Japper {
   
   
   
-  public static QueryResult query(String sql, Object...params) {
-    return query(threadConnection.get(), sql, params);
-  }
-  
+  /**
+   * Execute the given SQL query on the given connection, returning the result as a
+   * {@link QueryResult}.
+   * 
+   * @param conn the connection to execute the query on
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the result set as a {@link QueryResult}
+   */
   public static QueryResult query(Connection conn, String sql, Object...params) {
     Profile profile = new Profile(ResultSet.class, sql);
     
@@ -211,10 +183,19 @@ public class Japper {
   }
   
   
-  public static int execute(String sql, Object...params) {
-    return execute(threadConnection.get(), sql, params);
-  }
-  
+  /**
+   * Execute the given SQL statement on the given {@link Connection}, returning the
+   * number of rows affected.
+   * <p>
+   * This method is designed for issuing UPDATE/DELETE or other non-query SQL statements
+   * on the database, but taking advantage of all of the parameter parsing, setting and
+   * conversions offered by Japper.
+   * 
+   * @param conn the connection to execute the query on
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the number of rows affected by the given statement
+   */
   public static int execute(Connection conn, String sql, Object...params) {
     Profile profile = new Profile("statement", int.class, sql);
     
@@ -238,46 +219,21 @@ public class Japper {
       try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
     }
   }
-  
-  public static OutParameter out(Class<?> type) { return new OutParameter(type); }
-  
-  public static CallResult call(String sql, Object...params) {
-    return call(threadConnection.get(), sql, params);
-  }
-  
-  public static CallResult call(Connection conn, String sql, Object...params) {
-    Profile profile = new Profile("call", int.class, sql);
-    
-    CallableStatement cs = null;
-    try {
-      CallResult callResult = new CallResult();
-      cs = prepareCallSql(profile, conn, callResult, sql, params);
 
-      profile.startQuery();
-      cs.execute();
-      profile.stopQuery();
-      
-      profile.startMap();
-      callResult.readResults(cs);
-      profile.stopMap();
-      
-      profile.end();
-      profile.log();
-      
-      return callResult;
-    }
-    catch (SQLException sqlEx) {
-      throw new JapperException(sqlEx);
-    }
-    finally {
-      try { if (cs != null) cs.close(); } catch (SQLException ignored) {}
-    }
-  }
-
-  public static <T> T call(Class<T> targetType, String sql, Object...params) {
-    return call(threadConnection.get(), targetType, sql, params);
-  }
-  
+  /**
+   * Execute a SQL statement on the given {@link Connection}, and map
+   * the result of the call to the given target type.
+   * <p>
+   * If any of the parameter values are of type {@link OutParameter} then they
+   * will be registered as IN OUT parameters and their values will be mapped
+   * into the target type.
+   * 
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return an instance of target type with any OUT parameters mapped to its properties
+   */
   public static <T> T call(Connection conn, Class<T> targetType, String sql, Object...params) {
     Profile profile = new Profile("call", int.class, sql);
     
@@ -306,6 +262,57 @@ public class Japper {
       try { if (cs != null) cs.close(); } catch (SQLException ignored) {}
     }
   }
+  
+  /**
+   * Execute a SQL query or statement on the given {@link Connection}, and map
+   * the result of the call to a {@link CallResult}.
+   * <p>
+   * If any of the parameter values are of type {@link OutParameter} then they
+   * will be registered as IN OUT parameters and their return values will be 
+   * available in the returned {@link CallResult}
+   * 
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return a {@link CallResult} with any OUT parameter values
+   */
+  public static CallResult call(Connection conn, String sql, Object...params) {
+    Profile profile = new Profile("call", int.class, sql);
+    
+    CallableStatement cs = null;
+    try {
+      CallResult callResult = new CallResult();
+      cs = prepareCallSql(profile, conn, callResult, sql, params);
+
+      profile.startQuery();
+      cs.execute();
+      profile.stopQuery();
+      
+      profile.startMap();
+      callResult.readResults(cs);
+      profile.stopMap();
+      
+      profile.end();
+      profile.log();
+      
+      return callResult;
+    }
+    catch (SQLException sqlEx) {
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      try { if (cs != null) cs.close(); } catch (SQLException ignored) {}
+    }
+  }
+  
+  /**
+   * Convenience method for creating an {@link OutParameter} inline in a call to {@link Japper#call(Connection, Class, String, Object...) call}.
+   * 
+   * @param type the data type we expect this return value to have
+   * @return the OutParameter instance to pass in the parameters to {@link #call(Connection, Class, String, Object...) call}
+   */
+  public static OutParameter out(Class<?> type) { return new OutParameter(type); }
   
   
   private static String version = null;
