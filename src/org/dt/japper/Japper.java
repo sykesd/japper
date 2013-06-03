@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -438,6 +439,11 @@ public class Japper {
     }
     else if (value instanceof Float) {
       ps.setFloat(index, (Float) value);
+    }
+    else if (value instanceof Calendar) {
+      Calendar cal = (Calendar) value;
+      Timestamp timestamp = new Timestamp(cal.getTimeInMillis()); 
+      ps.setTimestamp(index, timestamp, cal);
     }
     else if (value instanceof Timestamp) {
       ps.setTimestamp(index, (Timestamp) value);

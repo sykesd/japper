@@ -224,7 +224,17 @@ public class DefaultMapper<T> implements Mapper<T> {
    */
   private void setProperty(Object dest, String propertyName, Class<?> writeType, Date value) {
     try {
-      PropertyUtils.setProperty(dest, propertyName, value);
+      Object valueToSet = value;
+      if (writeType.equals(long.class)) {
+        if (value != null) {
+          valueToSet = value.getTime();
+        }
+        else {
+          valueToSet = 0L;
+        }
+      }
+      
+      PropertyUtils.setProperty(dest, propertyName, valueToSet);
     }
     catch (Exception ex) {
       throw new IllegalArgumentException("Could not set property '"+propertyName+"' from BigDecimal value", ex);
@@ -241,7 +251,17 @@ public class DefaultMapper<T> implements Mapper<T> {
    */
   private void setProperty(Object dest, String propertyName, Class<?> writeType, Timestamp value) {
     try {
-      PropertyUtils.setProperty(dest, propertyName, value);
+      Object valueToSet = value;
+      if (writeType.equals(long.class)) {
+        if (value != null) {
+          valueToSet = value.getTime();
+        }
+        else {
+          valueToSet = 0L;
+        }
+      }
+      
+      PropertyUtils.setProperty(dest, propertyName, valueToSet);
     }
     catch (Exception ex) {
       throw new IllegalArgumentException("Could not set property '"+propertyName+"' from BigDecimal value", ex);

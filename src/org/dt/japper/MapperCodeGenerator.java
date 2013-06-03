@@ -248,6 +248,7 @@ public class MapperCodeGenerator {
     if (ps.writeType.isPrimitive()) {
       if (ps.writeType.equals(boolean.class)) return "false";
       if (ps.writeType.equals(float.class) || ps.writeType.equals(double.class)) return "0.0";
+      if (ps.writeType.equals(long.class)) return "0L";
       return "0";
     }
     
@@ -266,6 +267,11 @@ public class MapperCodeGenerator {
     
     if (ps.writeType.equals(java.sql.Timestamp.class) && ps.readType.equals(java.sql.Date.class) ) {
       source.append("    ").append(tempName).append(" = new java.sql.Timestamp(").append(sourceTempName).append(".getTime());\n");
+      return tempCounter;
+    }
+
+    if ( (ps.writeType.equals(long.class) || ps.writeType.equals(Long.class)) && (ps.readType.equals(java.sql.Timestamp.class) || ps.readType.equals(java.sql.Date.class)) ) {
+      source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".getTime();\n");
       return tempCounter;
     }
 
