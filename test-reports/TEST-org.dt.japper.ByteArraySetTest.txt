@@ -1,0 +1,4 @@
+Testsuite: org.dt.japper.ByteArraySetTest
+Tests run: 1, Failures: 0, Errors: 0, Time elapsed: 0.088 sec
+
+Testcase: canSetByteArray took 0.077 sec

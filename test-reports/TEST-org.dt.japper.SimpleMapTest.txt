@@ -1,0 +1,172 @@
+Testsuite: org.dt.japper.SimpleMapTest
+Tests run: 4, Failures: 0, Errors: 0, Time elapsed: 0.46 sec
+------------- Standard Output ---------------
+2013-08-28 15:02:26,423 [main] DEBUG org.dt.japper.Japper - ResultSet Meta Data:
+2013-08-28 15:02:26,424 [main] DEBUG org.dt.japper.Japper - Column 1: PART.PARTNO as PARTNO, type VARCHAR (12)
+2013-08-28 15:02:26,424 [main] DEBUG org.dt.japper.Japper - Column 2: PART.DESCRIPTION as DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,424 [main] DEBUG org.dt.japper.Japper - Column 3: PART.PART_TYPE as PART_TYPE, type VARCHAR (12)
+2013-08-28 15:02:26,492 [main] DEBUG org.dt.japper.PropertyMatcher - description : 1
+2013-08-28 15:02:26,492 [main] DEBUG org.dt.japper.PropertyMatcher - partType : 1
+2013-08-28 15:02:26,492 [main] DEBUG org.dt.japper.PropertyMatcher - partno : 1
+2013-08-28 15:02:26,494 [main] DEBUG org.dt.japper.Japper - Generated method:
+  public Object map(java.sql.ResultSet rs) {
+    org.dt.japper.testmodel.PartModel dest = new org.dt.japper.testmodel.PartModel();
+
+
+    dest.setPartno( rs.getString(1) );
+    java.lang.String t0 = rs.getString(2);
+    if (t0 != null) {
+      dest.setDescription(t0);
+    }
+    else {
+      dest.setDescription(null);
+    }
+    java.lang.String t1 = rs.getString(3);
+    if (t1 != null) {
+      dest.setPartType(t1);
+    }
+    else {
+      dest.setPartType(null);
+    }
+    return dest;
+  }
+2013-08-28 15:02:26,543 [main] INFO  org.dt.japper.Japper - query(org.dt.japper.testmodel.PartModel):
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -   original:    SELECT *     FROM part ORDER BY partno
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -   executed:    SELECT *     FROM part ORDER BY partno
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -   preparation: 1527us
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -         query: 3614us
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -           map: 117ms
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -                      row count: 3
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -                mapper creation: 117ms
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -                      first row: 45us
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper -                       avg. row: 17us
+2013-08-28 15:02:26,544 [main] INFO  org.dt.japper.Japper - Total: 122ms
+2013-08-28 15:02:26,547 [main] DEBUG org.dt.japper.Japper - ResultSet Meta Data:
+2013-08-28 15:02:26,547 [main] DEBUG org.dt.japper.Japper - Column 1: PART.PARTNO as PARTNO, type VARCHAR (12)
+2013-08-28 15:02:26,547 [main] DEBUG org.dt.japper.Japper - Column 2: PART.DESCRIPTION as DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,547 [main] DEBUG org.dt.japper.Japper - Column 3: PART.PART_TYPE as PART_TYPE, type VARCHAR (12)
+2013-08-28 15:02:26,547 [main] INFO  org.dt.japper.Japper - query(org.dt.japper.testmodel.PartModel):
+2013-08-28 15:02:26,547 [main] INFO  org.dt.japper.Japper -   original:    SELECT *     FROM part ORDER BY partno
+2013-08-28 15:02:26,547 [main] INFO  org.dt.japper.Japper -   executed:    SELECT *     FROM part ORDER BY partno
+2013-08-28 15:02:26,547 [main] INFO  org.dt.japper.Japper -   preparation: 283us
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper -         query: 234us
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper -           map: 50us
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper -                      row count: 3
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper -                mapper creation: 32us
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper -                      first row: 8139ns
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper -                       avg. row: 4718ns
+2013-08-28 15:02:26,548 [main] INFO  org.dt.japper.Japper - Total: 571us
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - ResultSet Meta Data:
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - Column 1: PART.PARTNO as PART_PARTNO, type VARCHAR (12)
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - Column 2: PART.DESCRIPTION as PART_DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - Column 3: CURRENCY.CURRENCY_CODE as CURRENCY_CODE, type VARCHAR (12)
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - Column 4: CURRENCY.CURRENCY_SYMBOL as CURRENCY_SYMBOL, type CHARACTER (1)
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - Column 5: CURRENCY.DESCRIPTION as CURRENCY_DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,556 [main] DEBUG org.dt.japper.Japper - Column 6: PRICING.PRICING_ID as PRICING_PRICING_ID, type NUMERIC (2)
+2013-08-28 15:02:26,557 [main] DEBUG org.dt.japper.Japper - Column 7: PRICING.DESCRIPTION as PRICING_DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,557 [main] DEBUG org.dt.japper.Japper - Column 8: PART_PRICE.PRICE as PRICE, type NUMERIC (2)
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - currency.currencyCode : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - currency.currencySymbol : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - currency.description : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - part.description : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - part.partType : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - part.partno : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - price : 1
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - pricing.description : 2
+2013-08-28 15:02:26,561 [main] DEBUG org.dt.japper.PropertyMatcher - pricing.pricingId : 2
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper - query(org.dt.japper.testmodel.PartPriceModel):
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -   original:    SELECT part.partno part_partno, part.description part_description, currency.currency_code        , currency.currency_symbol, currency.description currency_description        , pricing.pricing_id pricing_pricing_id, pricing.description pricing_description        , part_price.price      FROM part_price     JOIN part on (part.partno = part_price.partno)     JOIN currency on (currency.currency_code = part_price.currency_code)     JOIN pricing on (pricing.pricing_id = part_price.pricing_id) ORDER BY part.partno, pricing.pricing_id /*-codeGen*/ 
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -   executed:    SELECT part.partno part_partno, part.description part_description, currency.currency_code        , currency.currency_symbol, currency.description currency_description        , pricing.pricing_id pricing_pricing_id, pricing.description pricing_description        , part_price.price      FROM part_price     JOIN part on (part.partno = part_price.partno)     JOIN currency on (currency.currency_code = part_price.currency_code)     JOIN pricing on (pricing.pricing_id = part_price.pricing_id) ORDER BY part.partno, pricing.pricing_id /*-codeGen*/ 
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -   preparation: 1192us
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -         query: 1227us
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -           map: 8610us
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -                      row count: 6
+2013-08-28 15:02:26,566 [main] INFO  org.dt.japper.Japper -                mapper creation: 754us
+2013-08-28 15:02:26,567 [main] INFO  org.dt.japper.Japper -                      first row: 5789us
+2013-08-28 15:02:26,567 [main] INFO  org.dt.japper.Japper -                       avg. row: 1307us
+2013-08-28 15:02:26,567 [main] INFO  org.dt.japper.Japper - Total: 11ms
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - ResultSet Meta Data:
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 1: PART.PARTNO as PART_PARTNO, type VARCHAR (12)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 2: PART.DESCRIPTION as PART_DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 3: CURRENCY.CURRENCY_CODE as CURRENCY_CODE, type VARCHAR (12)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 4: CURRENCY.CURRENCY_SYMBOL as CURRENCY_SYMBOL, type CHARACTER (1)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 5: CURRENCY.DESCRIPTION as CURRENCY_DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 6: PRICING.PRICING_ID as PRICING_PRICING_ID, type NUMERIC (2)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 7: PRICING.DESCRIPTION as PRICING_DESCRIPTION, type VARCHAR (12)
+2013-08-28 15:02:26,570 [main] DEBUG org.dt.japper.Japper - Column 8: PART_PRICE.PRICE as PRICE, type NUMERIC (2)
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - currency.currencyCode : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - currency.currencySymbol : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - currency.description : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - part.description : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - part.partType : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - part.partno : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - price : 1
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - pricing.description : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.PropertyMatcher - pricing.pricingId : 2
+2013-08-28 15:02:26,571 [main] DEBUG org.dt.japper.Japper - Generated method:
+  public Object map(java.sql.ResultSet rs) {
+    org.dt.japper.testmodel.PartPriceModel dest = new org.dt.japper.testmodel.PartPriceModel();
+
+    if (dest.getCurrency() == null) dest.setCurrency( new org.dt.japper.testmodel.CurrencyModel() );
+    if (dest.getPart() == null) dest.setPart( new org.dt.japper.testmodel.PartModel() );
+    if (dest.getPricing() == null) dest.setPricing( new org.dt.japper.testmodel.PricingModel() );
+
+    dest.getPart().setPartno( rs.getString(1) );
+    java.lang.String t0 = rs.getString(2);
+    if (t0 != null) {
+      dest.getPart().setDescription(t0);
+    }
+    else {
+      dest.getPart().setDescription(null);
+    }
+    dest.getCurrency().setCurrencyCode( rs.getString(3) );
+    java.lang.String t1 = rs.getString(4);
+    if (t1 != null) {
+    java.lang.String ct1;
+    ct1 = org.dt.japper.MapperUtils.trimRight(t1);
+      dest.getCurrency().setCurrencySymbol(ct1);
+    }
+    else {
+      dest.getCurrency().setCurrencySymbol(null);
+    }
+    java.lang.String t2 = rs.getString(5);
+    if (t2 != null) {
+      dest.getCurrency().setDescription(t2);
+    }
+    else {
+      dest.getCurrency().setDescription(null);
+    }
+    dest.getPricing().setPricingId( rs.getBigDecimal(6) );
+    java.lang.String t3 = rs.getString(7);
+    if (t3 != null) {
+      dest.getPricing().setDescription(t3);
+    }
+    else {
+      dest.getPricing().setDescription(null);
+    }
+    java.math.BigDecimal t4 = rs.getBigDecimal(8);
+    if (t4 != null) {
+      dest.setPrice(t4);
+    }
+    else {
+      dest.setPrice(null);
+    }
+    return dest;
+  }
+2013-08-28 15:02:26,581 [main] INFO  org.dt.japper.Japper - query(org.dt.japper.testmodel.PartPriceModel):
+2013-08-28 15:02:26,581 [main] INFO  org.dt.japper.Japper -   original:    SELECT part.partno part_partno, part.description part_description, currency.currency_code        , currency.currency_symbol, currency.description currency_description        , pricing.pricing_id pricing_pricing_id, pricing.description pricing_description        , part_price.price      FROM part_price     JOIN part on (part.partno = part_price.partno)     JOIN currency on (currency.currency_code = part_price.currency_code)     JOIN pricing on (pricing.pricing_id = part_price.pricing_id) ORDER BY part.partno, pricing.pricing_id
+2013-08-28 15:02:26,581 [main] INFO  org.dt.japper.Japper -   executed:    SELECT part.partno part_partno, part.description part_description, currency.currency_code        , currency.currency_symbol, currency.description currency_description        , pricing.pricing_id pricing_pricing_id, pricing.description pricing_description        , part_price.price      FROM part_price     JOIN part on (part.partno = part_price.partno)     JOIN currency on (currency.currency_code = part_price.currency_code)     JOIN pricing on (pricing.pricing_id = part_price.pricing_id) ORDER BY part.partno, pricing.pricing_id
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -   preparation: 981us
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -         query: 789us
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -           map: 10ms
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -                      row count: 6
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -                mapper creation: 10ms
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -                      first row: 68us
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper -                       avg. row: 19us
+2013-08-28 15:02:26,582 [main] INFO  org.dt.japper.Japper - Total: 12ms
+------------- ---------------- ---------------
+
+Testcase: mapParts took 0.166 sec
+Testcase: mapOnePart took 0.001 sec
+Testcase: mapPricesUsingDefaultMapper took 0.013 sec
+Testcase: mapPrices took 0.014 sec

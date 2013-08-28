@@ -1,0 +1,41 @@
+Testsuite: org.dt.japper.SimpleStoredProcedureTest
+Tests run: 2, Failures: 0, Errors: 0, Time elapsed: 0.424 sec
+------------- Standard Output ---------------
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper - call(int):
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper -   original: { call do_something(:NAME, :MANGLED, :NAME_RANK) }
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper -   executed: { call do_something(?, ?, ?) }
+2013-08-28 15:02:27,574 [main] DEBUG org.dt.japper.Japper -   NAME = something
+2013-08-28 15:02:27,574 [main] DEBUG org.dt.japper.Japper -   MANGLED = OUT(java.lang.String)
+2013-08-28 15:02:27,574 [main] DEBUG org.dt.japper.Japper -   NAME_RANK = OUT(java.math.BigDecimal)
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper -   preparation: 3297us
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper -         query: 663us
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper -           map: 37us
+2013-08-28 15:02:27,574 [main] INFO  org.dt.japper.Japper - Total: 4472us
+2013-08-28 15:02:27,618 [main] DEBUG org.dt.japper.PropertyMatcher - mangled : 1
+2013-08-28 15:02:27,618 [main] DEBUG org.dt.japper.PropertyMatcher - nameRank : 1
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper - call(int):
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper -   original: { call do_something(:NAME, :MANGLED, :NAME_RANK) }
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper -   executed: { call do_something(?, ?, ?) }
+2013-08-28 15:02:27,620 [main] DEBUG org.dt.japper.Japper -   NAME = something
+2013-08-28 15:02:27,620 [main] DEBUG org.dt.japper.Japper -   MANGLED = OUT(java.lang.String)
+2013-08-28 15:02:27,620 [main] DEBUG org.dt.japper.Japper -   NAME_RANK = OUT(java.math.BigDecimal)
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper -   preparation: 311us
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper -         query: 95us
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper -           map: 37ms
+2013-08-28 15:02:27,620 [main] INFO  org.dt.japper.Japper - Total: 37ms
+2013-08-28 15:02:27,621 [main] DEBUG org.dt.japper.PropertyMatcher - mangled : 1
+2013-08-28 15:02:27,621 [main] DEBUG org.dt.japper.PropertyMatcher - nameRank : 1
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper - call(int):
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper -   original: { call do_something(:NAME, :MANGLED, :NAME_RANK) }
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper -   executed: { call do_something(?, ?, ?) }
+2013-08-28 15:02:27,621 [main] DEBUG org.dt.japper.Japper -   NAME = something
+2013-08-28 15:02:27,621 [main] DEBUG org.dt.japper.Japper -   MANGLED = OUT(java.lang.String)
+2013-08-28 15:02:27,621 [main] DEBUG org.dt.japper.Japper -   NAME_RANK = OUT(java.math.BigDecimal)
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper -   preparation: 240us
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper -         query: 67us
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper -           map: 141us
+2013-08-28 15:02:27,621 [main] INFO  org.dt.japper.Japper - Total: 452us
+------------- ---------------- ---------------
+
+Testcase: callTest took 0.054 sec
+Testcase: callWithTargetTypeTest took 0.04 sec

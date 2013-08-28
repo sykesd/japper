@@ -106,13 +106,14 @@ public class MapperCodeGenerator {
     }
   }
 
+  private static final Object CLASS_POOL_MUTEX = new Object();
   private static final int CLASS_POOL_REUSE_COUNTER = 100;
-  private static Integer classCounter = CLASS_POOL_REUSE_COUNTER;
+  private static int classCounter = CLASS_POOL_REUSE_COUNTER+1;     // Ensure that the first time call to getClassPool() will create a new class pool instance
   
   private static ClassPool mapperClassPool = null;
   
   private static ClassPool getClassPool() {
-    synchronized (classCounter) {
+    synchronized (CLASS_POOL_MUTEX) {
       classCounter++;
       if (classCounter > CLASS_POOL_REUSE_COUNTER) {
         classCounter = 1;
