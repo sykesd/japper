@@ -10,7 +10,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2013, David Sykes and Tomasz Orzechowski 
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -362,6 +362,12 @@ public class PropertyMatcher {
         }
       }
       else {
+        if (pnIndex >= propertyName.length()) {
+          // we have exhausted the property name without fully matching the column name
+          // this is the same as not matching
+          return -1;
+        }
+        
         cch = upperCase ? Character.toUpperCase(cch) : Character.toLowerCase(cch);
         char pch = propertyName.charAt(pnIndex++);
         if (pch != cch) {

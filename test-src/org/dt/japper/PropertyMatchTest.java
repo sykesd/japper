@@ -9,7 +9,7 @@ import java.beans.PropertyDescriptor;
 import org.junit.Test;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2013, David Sykes and Tomasz Orzechowski 
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@ import org.junit.Test;
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE. * @author Administrator
+ * POSSIBILITY OF SUCH DAMAGE.
  * 
  * 
  */
@@ -100,5 +100,18 @@ public class PropertyMatchTest {
     assertEquals(1, path.length);
     assertEquals("description", path[0].getName());
     
+  }
+  
+  @Test
+  public void indexOutOfBoundsBugTest() {
+    PropertyMatcher matcher = new PropertyMatcher(OrderHeader.class);
+
+    PropertyDescriptor[] path = null;
+    
+    path = matcher.match("CUSTOMERSTORENO", "STORE", "CUSTOMERSTORENO");
+    assertNotNull(path);
+    
+    path = matcher.match("CUST_ADDR_NAME1", "ADDRESS", "NAME1");
+    assertNotNull(path);
   }
 }
