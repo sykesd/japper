@@ -61,6 +61,8 @@ public class Store {
   
   private Address address;
 
+  private Branch branch;
+  
   public String getSitecode() {
     return sitecode;
   }
@@ -155,6 +157,14 @@ public class Store {
 
   public void setAddress(Address address) {
     this.address = address;
+  }
+
+  public Branch getBranch() {
+    return branch;
+  }
+
+  public void setBranch(Branch branch) {
+    this.branch = branch;
   }
 
   

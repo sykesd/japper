@@ -114,4 +114,46 @@ public class PropertyMatchTest {
     path = matcher.match("CUST_ADDR_NAME1", "ADDRESS", "NAME1");
     assertNotNull(path);
   }
+  
+  /**
+   * See https://github.com/sykesd/japper/issues/25
+   */
+  @Test
+  public void issue25LongColumnNameBugTest() {
+    PropertyMatcher matcher = new PropertyMatcher(OrderHeader.class);
+
+    PropertyDescriptor[] path = null;
+    
+    path = matcher.match("S_B_SITECODE_PHYSICAL_WAREHOUSE", "", "BRA_SITECODE_PHYSICAL_WAREHOUSE");
+    assertNotNull(path);
+    assertEquals("store", path[0].getName());
+    assertEquals("branch", path[1].getName());
+    assertEquals("sitecodePhysicalWarehouse", path[2].getName());
+    
+    path = matcher.match("BRA_SITECODE_PHYSICAL_WAREHOUSE", "", "BRA_SITECODE_PHYSICAL_WAREHOUSE");
+    assertNotNull(path);
+    assertEquals("store", path[0].getName());
+    assertEquals("branch", path[1].getName());
+    assertEquals("sitecodePhysicalWarehouse", path[2].getName());
+    
+    path = matcher.match("SITECODE_PHYSICAL_WAREHOUSE", "", "SITECODE_PHYSICAL_WAREHOUSE");
+    assertNotNull(path);
+    assertEquals(3, path.length);
+    assertEquals("store", path[0].getName());
+    assertEquals("branch", path[1].getName());
+    assertEquals("sitecodePhysicalWarehouse", path[2].getName());
+
+    /*
+     * The following is how we might actually want to alias this column to assign it
+     * correctly, but we currently require an exact match to the last property.
+     * TODO review the property matching rules so that the below alias test will pass
+     * It is currently disabled since it fails and breaks the build
+     */
+//    path = matcher.match("STO_BRA_SITE_PHYS_WAREHOUSE", "", "STO_BRA_SITE_PHYS_WAREHOUSE");
+//    assertNotNull(path);
+//    assertEquals(3, path.length);
+//    assertEquals("store", path[0].getName());
+//    assertEquals("branch", path[1].getName());
+//    assertEquals("sitecodePhysicalWarehouse", path[2].getName());
+  }
 }

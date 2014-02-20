@@ -1,4 +1,0 @@
-Testsuite: org.dt.japper.SimpleDatabaseTest
-Tests run: 1, Failures: 0, Errors: 0, Time elapsed: 0.259 sec
-
-Testcase: createTableTest took 0.003 sec
