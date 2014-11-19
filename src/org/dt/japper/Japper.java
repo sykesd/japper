@@ -1,16 +1,11 @@
 package org.dt.japper;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigDecimal;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -457,6 +452,9 @@ public class Japper {
     }
     else if (value instanceof Date) {
       ps.setDate(index, new java.sql.Date(((Date) value).getTime()));
+    }
+    else if (value instanceof byte[]) {
+      ps.setBlob(index, new ByteArrayInputStream((byte[]) value));
     }
   }
 

@@ -108,7 +108,7 @@ public class SimpleMapTest {
     PartModel part = price.getPart();
     assertEquals("123456", part.getPartno());
     assertEquals("EUR", price.getCurrency().getCurrencyCode());
-    assertEquals("€", price.getCurrency().getCurrencySymbol());
+    assertEquals("â‚¬", price.getCurrency().getCurrencySymbol());
     assertEquals(0, BigDecimal.valueOf(100).compareTo(price.getPrice()));
     
     conn.close();
@@ -125,7 +125,7 @@ public class SimpleMapTest {
     PartModel part = price.getPart();
     assertEquals("123456", part.getPartno());
     assertEquals("EUR", price.getCurrency().getCurrencyCode());
-    assertEquals("€", price.getCurrency().getCurrencySymbol());
+    assertEquals("â‚¬", price.getCurrency().getCurrencySymbol());
     assertEquals(0, BigDecimal.valueOf(100).compareTo(price.getPrice()));
     
     conn.close();

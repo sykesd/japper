@@ -8,7 +8,7 @@ import java.sql.Statement;
 import java.sql.Types;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012,2014, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,9 @@ public class TestData {
     
     createTable(conn, SQL_PART_PRICE_TABLE);
     insertData(conn, SQL_INSERT_PART_PRICE, DATA_PART_PRICE);
-    
+
+    createTable(conn, SQL_ATTACHMENT_TABLE);
+
     conn.close();
   }
   
@@ -112,7 +114,7 @@ public class TestData {
   
   private static final Object[][] DATA_CURRENCY = {
       { "AUD", "A$", "Australian Dollar" }
-    , { "EUR", "€", "Euro" }
+    , { "EUR", "â‚¬", "Euro" }
     , { "USD", "US$", "US Dollar" }
   };
 
@@ -159,7 +161,13 @@ public class TestData {
     , { "123789", 2, "USD", 0.98 }
   };
 
-  
+  private static String SQL_ATTACHMENT_TABLE =
+            " CREATE TABLE attachment ("
+          + "     id          NUMERIC(14)"
+          + "   , mime_type   VARCHAR(100)"
+          + "   , attachment  BLOB"
+          + ")"
+          ;
 
   private void createTable(Connection conn, String ddl) throws SQLException {
     Statement s = conn.createStatement();
