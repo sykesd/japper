@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -39,5 +39,5 @@ import java.sql.SQLException;
 
 
 public interface Mapper<T> {
-  T map(ResultSet rs) throws SQLException;
+  T map(ResultSet rs, RowProcessor<T> rowProcessor) throws SQLException;
 }

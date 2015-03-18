@@ -45,14 +45,14 @@ public class TestMapperGenerator {
     @SuppressWarnings("unchecked")
     Mapper<String> mapper = (Mapper<String>) impl.toClass().newInstance();
     
-    assertEquals("bar", mapper.map(null));
+    assertEquals("bar", mapper.map(null, null));
   }
   
   
   @Test
   public void genericInterfaceWithLookupTest() throws Exception {
     Mapper<String> mapper = createMapper(String.class).newInstance();
-    assertEquals("bar", mapper.map(null));
+    assertEquals("bar", mapper.map(null, null));
   }
   
 

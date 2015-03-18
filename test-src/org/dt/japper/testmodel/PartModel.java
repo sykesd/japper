@@ -1,7 +1,7 @@
 package org.dt.japper.testmodel;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -33,12 +33,16 @@ package org.dt.japper.testmodel;
  * 
  */
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 public class PartModel {
 
   private String partno;
   private String description;
   private String partType;
-  
+  private Map<String, BigDecimal> flexFields;
+
   public String getPartno() {
     return partno;
   }
@@ -57,6 +61,13 @@ public class PartModel {
   public void setPartType(String partType) {
     this.partType = partType;
   }
-  
-  
+
+
+  public Map<String, BigDecimal> getFlexFields() {
+    return flexFields;
+  }
+
+  public void setFlexFields(Map<String, BigDecimal> flexFields) {
+    this.flexFields = flexFields;
+  }
 }

@@ -124,17 +124,18 @@ public class TestData {
       + "     partno          VARCHAR(20) PRIMARY KEY"
       + "   , description     VARCHAR(60)"
       + "   , part_type       VARCHAR(3)"
+      + "   , dyn_field       VARCHAR(100)"
       + " )"
       ;
   
   private static final String SQL_INSERT_PART =
-      " INSERT INTO part(partno, description, part_type) VALUES(?, ?, ?)"
+      " INSERT INTO part(partno, description, part_type, dyn_field) VALUES(?, ?, ?, ?)"
       ;
   
   private static final Object[][] DATA_PART = {
-      { "123456", "Table, 50x50, Stainless steel", "FAB" }
-    , { "123654", "Casters, Black, Plastic", "BUY" }
-    , { "123789", "Door stop, Burgundy, Rubber", "BUY" }
+      { "123456", "Table, 50x50, Stainless steel", "FAB", "A:10" }
+    , { "123654", "Casters, Black, Plastic", "BUY", "B:20" }
+    , { "123789", "Door stop, Burgundy, Rubber", "BUY", "A:20,B:30" }
   };
 
   

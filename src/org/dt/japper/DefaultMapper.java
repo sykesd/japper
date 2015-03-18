@@ -65,7 +65,7 @@ public class DefaultMapper<T> implements Mapper<T> {
   }
   
   @Override
-  public T map(ResultSet rs) throws SQLException {
+  public T map(ResultSet rs, RowProcessor<T> rowProcessor) throws SQLException {
     T dest = create(resultType);
     
     PropertyMatcher matcher = null;
@@ -90,7 +90,11 @@ public class DefaultMapper<T> implements Mapper<T> {
         setProperty(path, dest, rs, i);
       }
     }
-    
+
+    if (rowProcessor != null) {
+      rowProcessor.process(dest, rs);
+    }
+
     return dest;
   }
   

@@ -16,7 +16,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -44,9 +44,7 @@ import org.apache.commons.logging.LogFactory;
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. 
- * 
- * @author David Sykes
- * 
+ *
  * 
  */
 
@@ -61,16 +59,90 @@ import org.apache.commons.logging.LogFactory;
  * We assume SQL is far better at doing the data stuff than anything we could
  * come up with, and we just worry about munging a result set into a nice object
  * for us to work with
- * 
+ *
+ * @author David Sykes
+ *
  */
 public class Japper {
   
   private static final Log log = LogFactory.getLog(Japper.class);
-  
+
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
    * resultType
-   * 
+   *
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   */
+  public static <T> List<T> query(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
+    Profile profile = new Profile(resultType, sql);
+
+    List<T> result = new ArrayList<T>();
+
+    PreparedStatement ps = null;
+    try {
+      ps = prepareSql(profile, conn, sql, params);
+
+      profile.startQuery();
+      ResultSetMetaData metaData = ps.getMetaData();
+      if (rowProcessor != null) {
+        rowProcessor.prepare(metaData);
+      }
+      logMetaData(metaData);
+
+      ResultSet rs = ps.executeQuery();
+      profile.stopQuery();
+
+      profile.startMap();
+      Mapper<T> mapper = getMapper(resultType, sql, metaData);
+      profile.stopMapperCreation();
+
+      while (rs.next()) {
+        profile.startMapRow();
+        result.add( mapper.map(rs, rowProcessor) );
+        profile.stopMapRow();
+      }
+      profile.stopMap();
+
+      profile.end();
+      profile.log();
+
+      return result;
+    }
+    catch (SQLException sqlEx) {
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      Throwable exceptionDuringDispose = null;
+      if (rowProcessor != null) {
+        try {
+          rowProcessor.dispose();
+        }
+        catch (Throwable t) {
+          exceptionDuringDispose = t;
+        }
+      }
+
+      try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
+
+      if (exceptionDuringDispose != null) {
+        if (exceptionDuringDispose instanceof JapperException) {
+          throw (JapperException) exceptionDuringDispose;
+        }
+        throw new JapperException(exceptionDuringDispose);
+      }
+    }
+  }
+
+
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType
+   *
    * @param conn the connection to execute the query on
    * @param resultType the result to map the query results to
    * @param sql the SQL statement to execute
@@ -78,45 +150,32 @@ public class Japper {
    * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
    */
   public static <T> List<T> query(Connection conn, Class<T> resultType, String sql, Object...params) {
-    Profile profile = new Profile(resultType, sql);
-    
-    List<T> result = new ArrayList<T>();
-    
-    PreparedStatement ps = null;
-    try {
-      ps = prepareSql(profile, conn, sql, params);
-      
-      profile.startQuery();
-      ResultSetMetaData metaData = ps.getMetaData();
-      logMetaData(metaData);
-      
-      ResultSet rs = ps.executeQuery();
-      profile.stopQuery();
-      
-      profile.startMap();
-      Mapper<T> mapper = getMapper(resultType, sql, metaData);
-      profile.stopMapperCreation();
-      
-      while (rs.next()) {
-        profile.startMapRow();
-        result.add( mapper.map(rs) );
-        profile.stopMapRow();
-      }
-      profile.stopMap();
-
-      profile.end();
-      profile.log();
-      
-      return result;
-    }
-    catch (SQLException sqlEx) {
-      throw new JapperException(sqlEx);
-    }
-    finally {
-      try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
-    }
+    return query(conn, resultType, null, sql, params);
   }
-  
+
+
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType. Return only the first result returned.
+   * <p>
+   * NOTE: at present this implementation of this is very naive. It simply calls query()
+   * and then returns the first element of the returned list. It is assumed the caller
+   * is not issuing a query that returns thousands of rows and then only wants the first one
+   * <p>
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
+   */
+  public static <T> T queryOne(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
+    List<T> results = query(conn, resultType, rowProcessor, sql, params);
+    if (results.size() > 0) {
+      return results.get(0);
+    }
+    return null;
+  }
 
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
@@ -133,13 +192,13 @@ public class Japper {
    * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
    */
   public static <T> T queryOne(Connection conn, Class<T> resultType, String sql, Object...params) {
-    List<T> results = query(conn, resultType, sql, params);
+    List<T> results = query(conn, resultType, null, sql, params);
     if (results.size() > 0) {
       return results.get(0);
     }
     return null;
   }
-  
+
   
   
   /**
@@ -224,7 +283,7 @@ public class Japper {
    * into the target type.
    * 
    * @param conn the connection to execute the query on
-   * @param resultType the result to map the query results to
+   * @param targetType the result to map the query results to
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return an instance of target type with any OUT parameters mapped to its properties

@@ -72,8 +72,11 @@ public class MapperCodeGenerator {
     String methodBody = buildMapMethodBody(resultType, metaData);
     
     String source = new StringBuilder()
-        .append("  public Object map(java.sql.ResultSet rs) {\n")
+        .append("  public Object map(java.sql.ResultSet rs, org.dt.japper.RowProcessor rowProcessor) {\n")
         .append(methodBody)
+        .append("    if (rowProcessor != null) {\n")
+        .append("      rowProcessor.process(dest, rs);\n")
+        .append("    }\n")
         .append("    return dest;\n")
         .append("  }")
         .toString();

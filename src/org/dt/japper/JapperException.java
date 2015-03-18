@@ -3,7 +3,7 @@ package org.dt.japper;
 import java.sql.SQLException;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ import java.sql.SQLException;
 
 public class JapperException extends RuntimeException {
 
-  public JapperException(SQLException cause) {
+  public JapperException(Throwable cause) {
     super("Error executing Japper query", cause);
   }
   
