@@ -14,5 +14,9 @@ lib/
 test-reports/
 test-classes/
 
+# Build products
+japper*.jar
+
+
 
 
