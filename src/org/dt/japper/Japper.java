@@ -233,6 +233,12 @@ public class Japper {
       return new QueryResult(ps, rs);
     }
     catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
       try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
       throw new JapperException(sqlEx);
     }
@@ -269,6 +275,12 @@ public class Japper {
       return rowsAffected;
     }
     catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
       throw new JapperException(sqlEx);
     }
     finally {
@@ -312,6 +324,12 @@ public class Japper {
       return result;
     }
     catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
       throw new JapperException(sqlEx);
     }
     finally {
@@ -354,6 +372,12 @@ public class Japper {
       return callResult;
     }
     catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
       throw new JapperException(sqlEx);
     }
     finally {
@@ -458,6 +482,7 @@ public class Japper {
     List<Integer> indexes = paramValue.getStartIndexes();
     if (paramValue.getReplaceCount() == 1) {
       setParameter(ps, paramValue.getValue(), indexes);
+      return;
     }
 
     /*
