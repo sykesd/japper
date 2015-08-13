@@ -1,13 +1,10 @@
 package org.dt.japper;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +31,7 @@ import java.util.Map;
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE. * @author Administrator
+ * POSSIBILITY OF SUCH DAMAGE.
  * 
  * 
  */
@@ -42,13 +39,72 @@ import java.util.Map;
 
 public class ParameterParser {
 
+  public class ParameterValue {
+    private final String name;
+    private final Object value;
+    private final int replaceCount;
+    private final List<Integer> startIndexes = new ArrayList<Integer>();
+
+    private ParameterValue(String name, Object value) {
+      this.name = name;
+      this.value = value;
+      this.replaceCount = inferReplaceCount();
+    }
+
+    public String getName() { return name; }
+
+    public Object getValue() { return value; }
+
+    public int getReplaceCount() { return replaceCount; }
+
+    public List<Integer> getStartIndexes() { return Collections.unmodifiableList(startIndexes); }
+
+    public int addStartIndex(int index) {
+      startIndexes.add(index);
+      return index+replaceCount;
+    }
+
+    private int inferReplaceCount() {
+      if (value == null) {
+        return 1;
+      }
+
+      if (value instanceof byte[]) {
+        // byte[] is a special case of an array since that is how we get BLOB values
+        return 1;
+      }
+
+      if (value instanceof Collection) {
+        Collection<?> bag = (Collection<?>) value;
+        return bag.size();
+      }
+
+      if (value.getClass().isArray()) {
+        return Array.getLength(value);
+      }
+
+      return 1;
+    }
+  }
+
   private String originalSql;
   private String resultSql;
-  
+
+  private Map<String, ParameterValue> paramValueMap = new HashMap<String, ParameterValue>();
   private Map<String, List<Integer>> paramMap = new HashMap<String, List<Integer>>();
   
-  public ParameterParser(String query) {
+  public ParameterParser(String query, Object...params) {
     this.originalSql = query;
+
+    if (params != null && params.length > 0) {
+      if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
+
+      for (int i = 0; i < params.length; i += 2) {
+        String name = (String) params[i];
+        Object value = params[i + 1];
+        paramValueMap.put(name.toLowerCase(), new ParameterValue(name, value));
+      }
+    }
   }
   
   public ParameterParser parse() {
@@ -65,18 +121,26 @@ public class ParameterParser {
     
     return this;
   }
-  
-  public List<Integer> getIndexes(String name) {
-    List<Integer> indexes = paramMap.get(name.toLowerCase());
-    if (indexes == null) {
-      return null;
-    }
-    return Collections.unmodifiableList(indexes); 
+
+  public Collection<ParameterValue> getParameterValues() {
+    return Collections.unmodifiableCollection(paramValueMap.values());
   }
-  
+
   public String getSql() { return resultSql; }
-  
-  private static enum State { IN_SQL, PARAM_START, PARAM_NAME, IN_SINGLE, IN_DOUBLE }
+
+  /**
+   * Get the given parameter value.
+   * <p>
+   *   This method is here only for testing. It is not part of the public API of this method.
+   * </p>
+   * @param name the name of parameter we want the parsed value for
+   * @return the parsed value
+   */
+  ParameterValue getParameterValue(String name) {
+    return paramValueMap.get(name.toLowerCase());
+  }
+
+  private enum State { IN_SQL, PARAM_START, PARAM_NAME, IN_SINGLE, IN_DOUBLE }
   private State state = State.IN_SQL;
   
   private static final int EOS = -1;
@@ -156,14 +220,18 @@ public class ParameterParser {
   
   private void addParamRef() {
     String name = paramName.toString().toLowerCase();
-    List<Integer> refs = paramMap.get(name);
-    if (refs == null) {
-      refs = new ArrayList<Integer>();
-      paramMap.put(name, refs);
+    ParameterValue paramValue = paramValueMap.get(name);
+    if (paramValue == null) {
+      throw new IllegalArgumentException("Referenced parameter has no value: "+paramName.toString());
     }
-    refs.add(paramIndex++);
-    
-    addToResult('?');
+
+    paramIndex = paramValue.addStartIndex(paramIndex);
+    for (int i = 0; i < paramValue.getReplaceCount(); i++) {
+      if (i > 0) {
+        addToResult(',');
+      }
+      addToResult('?');
+    }
   }
   
   private boolean handleInDouble(int ch) {

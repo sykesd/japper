@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -42,18 +42,18 @@ public class TestParameterParser {
   @Test
   public void parserTests() {
     String sql = "select * from users where sso_user_name = :ssoUserName";
-    ParameterParser pp = new ParameterParser(sql).parse();
+    ParameterParser pp = new ParameterParser(sql, "ssoUserName", "Some value").parse();
     assertEquals("select * from users where sso_user_name = ?", pp.getSql());
-    assertEquals(1, pp.getIndexes("ssoUsername").size());
-    assertEquals(Integer.valueOf(1), pp.getIndexes("SSOUSERNAME").get(0));
+    assertEquals(1, pp.getParameterValue("ssoUserName").getStartIndexes().size());
+    assertEquals(Integer.valueOf(1), pp.getParameterValue("SSOUSERNAME").getStartIndexes().get(0));
     
     sql = "select a, ':' b from c where :d = 'some string:'";
-    pp = new ParameterParser(sql).parse();
+    pp = new ParameterParser(sql, "d", "Another value").parse();
     assertEquals("select a, ':' b from c where ? = 'some string:'", pp.getSql());
     
     sql = "select a from b where c = :p and d = :p";
-    pp = new ParameterParser(sql).parse();
+    pp = new ParameterParser(sql, "p", "One more value").parse();
     assertEquals("select a from b where c = ? and d = ?", pp.getSql());
-    assertEquals(2, pp.getIndexes("p").size());
+    assertEquals(2, pp.getParameterValue("p").getStartIndexes().size());
   }
 }

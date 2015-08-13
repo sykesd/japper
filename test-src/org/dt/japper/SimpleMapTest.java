@@ -4,7 +4,10 @@ import static org.junit.Assert.assertEquals;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.dt.japper.testmodel.PartModel;
 import org.dt.japper.testmodel.PartPriceModel;
@@ -12,7 +15,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -82,6 +85,87 @@ public class SimpleMapTest {
     assertEquals("123456", part.getPartno());
     assertEquals("FAB", part.getPartType());
     
+    conn.close();
+  }
+
+  private static final String SQL_PARTS_IN_LIST =
+          "   SELECT *"
+        + "     FROM part"
+        + "    WHERE partno in(:PART_LIST)"
+        + " ORDER BY partno"
+        ;
+
+  @Test
+  public void mapPartsInList() throws Exception {
+    Connection conn = testData.connect();
+
+    List<String> partsList = Arrays.asList("123456", "123789");
+
+    List<PartModel> parts = Japper.query(conn, PartModel.class, SQL_PARTS_IN_LIST, "PART_LIST", partsList);
+    assertEquals(2, parts.size());
+
+    PartModel part = parts.get(0);
+    assertEquals("123456", part.getPartno());
+    assertEquals("FAB", part.getPartType());
+
+    PartModel part2 = parts.get(1);
+    assertEquals("123789", part2.getPartno());
+    assertEquals("BUY", part2.getPartType());
+
+    conn.close();
+  }
+
+  @Test
+  public void mapPartsInArray() throws Exception {
+    Connection conn = testData.connect();
+
+    List<PartModel> parts = Japper.query(conn, PartModel.class, SQL_PARTS_IN_LIST, "PART_LIST", new String[]{"123456", "123789"});
+    assertEquals(2, parts.size());
+
+    PartModel part = parts.get(0);
+    assertEquals("123456", part.getPartno());
+    assertEquals("FAB", part.getPartType());
+
+    PartModel part2 = parts.get(1);
+    assertEquals("123789", part2.getPartno());
+    assertEquals("BUY", part2.getPartType());
+
+    conn.close();
+  }
+
+
+  @Test
+  public void mapPartsInListSingleValue() throws Exception {
+    Connection conn = testData.connect();
+
+    List<PartModel> parts = Japper.query(conn, PartModel.class, SQL_PARTS_IN_LIST, "PART_LIST", "123456");
+    assertEquals(1, parts.size());
+
+    PartModel part = parts.get(0);
+    assertEquals("123456", part.getPartno());
+    assertEquals("FAB", part.getPartType());
+
+    conn.close();
+  }
+
+  @Test
+  public void mapPartsInSet() throws Exception {
+    Connection conn = testData.connect();
+
+    Set<String> partsSet = new HashSet<String>( Arrays.asList("123456", "123789", "123456") );
+    assertEquals(2, partsSet.size());
+
+    List<PartModel> parts = Japper.query(conn, PartModel.class, SQL_PARTS_IN_LIST, "PART_LIST", partsSet);
+    assertEquals(2, parts.size());
+
+    PartModel part = parts.get(0);
+    assertEquals("123456", part.getPartno());
+    assertEquals("FAB", part.getPartType());
+
+    PartModel part2 = parts.get(1);
+    assertEquals("123789", part2.getPartno());
+    assertEquals("BUY", part2.getPartType());
+
     conn.close();
   }
 

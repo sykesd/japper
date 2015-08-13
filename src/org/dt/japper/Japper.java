@@ -1,19 +1,15 @@
 package org.dt.japper;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.sql.Date;
+import java.util.*;
 
 /*
  * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
@@ -114,6 +110,12 @@ public class Japper {
       return result;
     }
     catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
       throw new JapperException(sqlEx);
     }
     finally {
@@ -326,7 +328,6 @@ public class Japper {
    * available in the returned {@link CallResult}
    * 
    * @param conn the connection to execute the query on
-   * @param resultType the result to map the query results to
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return a {@link CallResult} with any OUT parameter values
@@ -401,41 +402,33 @@ public class Japper {
   
   private static CallableStatement prepareCallSql(Profile profile, Connection conn, CallResult callResult, String sql, Object...params) throws SQLException {
     profile.startPrep();
-    ParameterParser parser = new ParameterParser(sql).parse();
+    ParameterParser parser = new ParameterParser(sql, params).parse();
     
     profile.setSql(parser.getSql());
-    CallableStatement cs = conn.prepareCall(parser.getSql()); 
-    
+    CallableStatement cs = conn.prepareCall(parser.getSql());
+
     if (params != null && params.length > 0) {
-      if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
-      
-      for (int i = 0; i < params.length; i+=2) {
-        String name = (String) params[i];
-        Object value = params[i+1];
-        
-        profile.setParam( name, (value == null ? "(null)" : value.toString()) );
-        
-        List<Integer> indexes = parser.getIndexes(name);
-        if (indexes != null) {
-          if (value instanceof OutParameter) {
-            if (indexes.size() != 1) throw new IllegalArgumentException("OUT parameter "+name+" referenced multiple times!");
-            OutParameter outP = (OutParameter) value;
-            callResult.register(cs, name, outP.getType(), indexes.get(0));
-          }
-          else {
-            setParameter(cs, value, indexes);
-          }
+      for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
+        profile.setParam(paramValue.getName(), (paramValue.getValue() == null ? "(null)" : paramValue.getValue().toString()));
+
+        if (paramValue.getValue() instanceof OutParameter) {
+          if (paramValue.getStartIndexes().size() != 1) throw new IllegalArgumentException("OUT parameter "+paramValue.getName()+" referenced multiple times!");
+          OutParameter outP = (OutParameter) paramValue.getValue();
+          callResult.register(cs, paramValue.getName(), outP.getType(), paramValue.getStartIndexes().get(0));
+        }
+        else {
+          setParameter(cs, paramValue);
         }
       }
     }
-    
+
     profile.stopPrep();
     return cs;
   }
   
   private static PreparedStatement prepareSql(Profile profile, Connection conn, String sql, Object...params) throws SQLException {
     profile.startPrep();
-    ParameterParser parser = new ParameterParser(sql).parse();
+    ParameterParser parser = new ParameterParser(sql, params).parse();
     
     profile.setSql(parser.getSql());
     PreparedStatement ps = conn.prepareStatement(parser.getSql());
@@ -451,25 +444,45 @@ public class Japper {
     ps.setFetchSize(500); 
     
     if (params != null && params.length > 0) {
-      if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
-      
-      for (int i = 0; i < params.length; i+=2) {
-        String name = (String) params[i];
-        Object value = params[i+1];
-        
-        profile.setParam( name, (value == null ? "(null)" : value.toString()) );
-        
-        List<Integer> indexes = parser.getIndexes(name);
-        if (indexes != null) {
-          setParameter(ps, value, indexes);
-        }
+      for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
+        profile.setParam( paramValue.getName(), (paramValue.getValue() == null ? "(null)" : paramValue.getValue().toString()) );
+        setParameter(ps, paramValue);
       }
     }
     
     profile.stopPrep();
     return ps;
   }
-  
+
+  private static void setParameter(PreparedStatement ps, ParameterParser.ParameterValue paramValue) throws SQLException {
+    List<Integer> indexes = paramValue.getStartIndexes();
+    if (paramValue.getReplaceCount() == 1) {
+      setParameter(ps, paramValue.getValue(), indexes);
+    }
+
+    /*
+     * The value is a Collection or an array. Iterate over the values and set them at their appropriate index
+     */
+    Object rawValue = paramValue.getValue();
+    if (rawValue instanceof Collection) {
+      Collection<?> bag = (Collection<?>) rawValue;
+      for (int startIndex : indexes) {
+        int subIndex = 0;
+        for (Object v : bag) {
+          setParameter(ps, v, startIndex+subIndex);
+          subIndex++;
+        }
+      }
+    }
+    else if (rawValue.getClass().isArray()) {
+      for (int startIndex : indexes) {
+        for (int subIndex = 0; subIndex < paramValue.getReplaceCount(); subIndex++) {
+          setParameter(ps, java.lang.reflect.Array.get(rawValue, subIndex), startIndex+subIndex);
+        }
+      }
+    }
+  }
+
   private static void setParameter(PreparedStatement ps, Object value, List<Integer> indexes) throws SQLException {
     for (int index : indexes) {
       setParameter(ps, value, index);
@@ -680,6 +693,10 @@ public class Japper {
     private String nicify(long start, long end) { return nicify(end - start); }
     
     private String nicify(long duration) {
+      if (duration < 0L) {
+        return "ERROR!";
+      }
+
       if (duration > MILLI_THRESHOLD) {
         return Long.toString(duration / 1000000L)+"ms";
       }
