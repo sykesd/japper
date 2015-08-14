@@ -1,5 +1,8 @@
 package org.dt.japper;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -53,6 +56,34 @@ public class ParameterParser {
 
     public String getName() { return name; }
 
+    /**
+     * Is the value a {@link List}-type that requires expansion?
+     * <p>
+     *   <tt>List</tt>-type values are ones that:
+     *   <ul>
+     *     <li>an array (but not <tt>byte[]</tt></li>
+     *     <li>are a {@link Collection}</li>
+     *   </ul>
+     * </p>
+     *
+     * @return true if the value is a <tt>List</tt>-type
+     */
+    public boolean isListTypeValue() {
+      if (value == null) {
+        return false;
+      }
+      if (value instanceof byte[]) {
+        return false;
+      }
+      if (value.getClass().isArray()) {
+        return true;
+      }
+      if (value instanceof Collection) {
+        return true;
+      }
+      return false;
+    }
+
     public Object getValue() { return value; }
 
     public int getReplaceCount() { return replaceCount; }
@@ -91,8 +122,7 @@ public class ParameterParser {
   private String resultSql;
 
   private Map<String, ParameterValue> paramValueMap = new HashMap<String, ParameterValue>();
-  private Map<String, List<Integer>> paramMap = new HashMap<String, List<Integer>>();
-  
+
   public ParameterParser(String query, Object...params) {
     this.originalSql = query;
 
@@ -146,7 +176,7 @@ public class ParameterParser {
   private static final int EOS = -1;
   private StringBuffer sql = new StringBuffer();
   private StringBuffer paramName = new StringBuffer();
-  private int paramIndex = 1;
+  private int paramRefIndex = 1;
   
   private boolean handleChar(int ch) {
     switch(state) {
@@ -225,7 +255,8 @@ public class ParameterParser {
       throw new IllegalArgumentException("Referenced parameter has no value: "+paramName.toString());
     }
 
-    paramIndex = paramValue.addStartIndex(paramIndex);
+    paramRefIndex = paramValue.addStartIndex(paramRefIndex);
+
     for (int i = 0; i < paramValue.getReplaceCount(); i++) {
       if (i > 0) {
         addToResult(',');

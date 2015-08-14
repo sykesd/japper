@@ -480,7 +480,8 @@ public class Japper {
 
   private static void setParameter(PreparedStatement ps, ParameterParser.ParameterValue paramValue) throws SQLException {
     List<Integer> indexes = paramValue.getStartIndexes();
-    if (paramValue.getReplaceCount() == 1) {
+
+    if (!paramValue.isListTypeValue()) {
       setParameter(ps, paramValue.getValue(), indexes);
       return;
     }
@@ -506,6 +507,19 @@ public class Japper {
         }
       }
     }
+  }
+
+  private static String formatList(List<Integer> indexes) {
+    StringBuilder out = new StringBuilder("[");
+    String prefix = "";
+
+    for (int index : indexes) {
+      out.append(prefix).append(index);
+      prefix = ",";
+    }
+
+    out.append("]");
+    return out.toString();
   }
 
   private static void setParameter(PreparedStatement ps, Object value, List<Integer> indexes) throws SQLException {

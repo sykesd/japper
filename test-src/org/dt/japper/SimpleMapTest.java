@@ -88,12 +88,37 @@ public class SimpleMapTest {
     conn.close();
   }
 
+  private static final String SQL_PARTS_IN_LIST_WITH_EXTRA =
+          "   SELECT *"
+        + "     FROM part"
+        + "    WHERE partno in(:PART_LIST)"
+        + "      AND partno != :LANGUAGE"
+        + "      AND description != :LANGUAGE"
+        + " ORDER BY partno"
+          ;
+
+  @Test
+  public void mapPartsInListMultipleReferences() throws Exception {
+    Connection conn = testData.connect();
+
+    List<String> partsList = Arrays.asList("123456");
+
+    List<PartModel> parts = Japper.query(conn, PartModel.class, SQL_PARTS_IN_LIST_WITH_EXTRA, "LANGUAGE", "EN", "PART_LIST", partsList);
+    assertEquals(1, parts.size());
+
+    PartModel part = parts.get(0);
+    assertEquals("123456", part.getPartno());
+    assertEquals("FAB", part.getPartType());
+
+    conn.close();
+  }
+
   private static final String SQL_PARTS_IN_LIST =
           "   SELECT *"
         + "     FROM part"
         + "    WHERE partno in(:PART_LIST)"
         + " ORDER BY partno"
-        ;
+          ;
 
   @Test
   public void mapPartsInList() throws Exception {
