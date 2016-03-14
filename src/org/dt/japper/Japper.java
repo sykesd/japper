@@ -55,6 +55,15 @@ import java.util.*;
  * We assume SQL is far better at doing the data stuff than anything we could
  * come up with, and we just worry about munging a result set into a nice object
  * for us to work with
+ * <p>
+ *   <strong>Configuration</strong>
+ * </p>
+ * <p>
+ *   When reading BLOB field values, Japper reads the entire BLOB into memory. As such it places
+ *   a limit on the maximum size that can be read. The default is 64MB. However, you can configure
+ *   this limit via a Java system property: <code>japper.blob.limit</code>. The number given is
+ *   the maximum size in megabytes.
+ * </p>
  *
  * @author David Sykes
  *

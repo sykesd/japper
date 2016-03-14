@@ -1,8 +1,14 @@
 package org.dt.japper.lob;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  * Copyright (c) 2013, David Sykes and Tomasz Orzechowski 
@@ -39,8 +45,11 @@ import java.sql.SQLException;
 
 public class BlobReader {
 
-  public static final long MAX_BLOB_LENGTH = 32 * 1024 * 1024L;   // 32MB - max BLOB size we support loading at once
-  
+  private static final Log log = LogFactory.getLog(BlobReader.class);
+
+  public static final long MAX_BLOB_LENGTH = getMaxBlobLength();
+
+
   /**
    * Read the value of columnIndex column from the current row of result set rs as a BLOB value
    * If the value is null or of zero length, return null
@@ -68,5 +77,36 @@ public class BlobReader {
     
     return blob.getBytes(1L, (int) length);
   }
-  
+
+  private static final long DEFAULT_MAX_BLOB_LENGTH = 64 * 1024 * 1024L;   // 64MB - max BLOB size we support loading at once
+
+  private static final Pattern REGEX_MAX_LENGTH = Pattern.compile("([0-9]+)(m|M)?");
+
+  private static long getMaxBlobLength() {
+    try {
+      String rawLength = System.getProperty("japper.blob.limit", "64M");
+      return parseMaxBlobLength(rawLength);
+    }
+    catch (Exception ex) {
+      log.error(String.format("Error reading BLOB size limit - using default of %d bytes", DEFAULT_MAX_BLOB_LENGTH));
+      return DEFAULT_MAX_BLOB_LENGTH;
+    }
+  }
+
+  static long parseMaxBlobLength(String rawLength) {
+    if (rawLength == null) {
+      return DEFAULT_MAX_BLOB_LENGTH;
+    }
+
+    Matcher matcher = REGEX_MAX_LENGTH.matcher(rawLength);
+    if (matcher.matches()) {
+      return Long.parseLong(matcher.group(1)) * 1024L * 1024L;
+    }
+    else if (log.isDebugEnabled()) {
+      log.debug(String.format("Invalid length parameter: %s. Using default limit of %d bytes", rawLength, DEFAULT_MAX_BLOB_LENGTH));
+    }
+
+    return DEFAULT_MAX_BLOB_LENGTH;
+  }
+
 }

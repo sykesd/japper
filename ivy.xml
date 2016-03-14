@@ -8,13 +8,13 @@
   </configurations>
   
   <dependencies>
-    <dependency org="commons-logging" name="commons-logging" rev="1.1.1" conf="prod->default"/>
-    <dependency org="commons-beanutils" name="commons-beanutils" rev="1.8.3" conf="prod->default"/>
-    <dependency org="javassist" name="javassist" rev="3.12.1.GA" conf="prod->default"/>
+    <dependency org="commons-logging" name="commons-logging" rev="1.2" conf="prod->default"/>
+    <dependency org="commons-beanutils" name="commons-beanutils" rev="1.9.0" conf="prod->default"/>
+    <dependency org="org.javassist" name="javassist" rev="3.20.0-GA" conf="prod->default"/>
     
-    <dependency org="junit" name="junit" rev="4.10" conf="test->default" />
-    <dependency org="org.hsqldb" name="hsqldb" rev="2.2.8" conf="test->default" />
-    <dependency org="log4j" name="log4j" rev="1.2.16" conf="test->default" />    
+    <dependency org="junit" name="junit" rev="4.12" conf="test->default" />
+    <dependency org="org.hsqldb" name="hsqldb" rev="2.3.3" conf="test->default" />
+    <dependency org="log4j" name="log4j" rev="1.2.17" conf="test->default" />
   </dependencies>
   
 </ivy-module>
