@@ -95,6 +95,13 @@ public class ParameterParser {
       return index+replaceCount;
     }
 
+    public Integer getFirstIndex() {
+      if (startIndexes == null || startIndexes.isEmpty()) {
+        return -1;
+      }
+      return startIndexes.get(0);
+    }
+
     private int inferReplaceCount() {
       if (value == null) {
         return 1;

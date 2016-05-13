@@ -442,7 +442,7 @@ public class Japper {
 
     if (params != null && params.length > 0) {
       for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
-        profile.setParam(paramValue.getName(), (paramValue.getValue() == null ? "(null)" : paramValue.getValue().toString()));
+        profile.setParam(paramValue.getName(), paramValue.getValue(), paramValue.getFirstIndex());
 
         if (paramValue.getValue() instanceof OutParameter) {
           if (paramValue.getStartIndexes().size() != 1) throw new IllegalArgumentException("OUT parameter "+paramValue.getName()+" referenced multiple times!");
@@ -478,7 +478,7 @@ public class Japper {
     
     if (params != null && params.length > 0) {
       for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
-        profile.setParam( paramValue.getName(), (paramValue.getValue() == null ? "(null)" : paramValue.getValue().toString()) );
+        profile.setParam( paramValue.getName(), paramValue.getValue(), paramValue.getFirstIndex() );
         setParameter(ps, paramValue);
       }
     }
@@ -660,6 +660,7 @@ public class Japper {
     
     private List<String> names = new ArrayList<String>();
     private List<String> values = new ArrayList<String>();
+    private List<Integer> indexes = new ArrayList<Integer>();
     
     public Profile(Class<?> type, String originalSql) {
       this("query", type, originalSql);
@@ -674,9 +675,10 @@ public class Japper {
     
     public void setSql(String sql) { this.sql = sql; }
     
-    public void setParam(String name, String value) {
+    public void setParam(String name, Object value, Integer firstIndex) {
       names.add(name);
-      values.add(value);
+      values.add(value == null ? "(null)" : value.toString());
+      indexes.add(firstIndex);
     }
     
     public void startPrep() { prepStart = System.nanoTime(); }
@@ -718,7 +720,7 @@ public class Japper {
       log.info("  executed: "+sql);
       if (log.isDebugEnabled() && !names.isEmpty()) {
         for (int i = 0; i < names.size(); i++) {
-          log.debug("  "+names.get(i)+" = "+values.get(i));
+          log.debug("  "+names.get(i)+" = "+values.get(i)+" @ "+indexes.get(i));
         }
       }
       log.info("  preparation: "+nicify(prepStart, prepEnd));
