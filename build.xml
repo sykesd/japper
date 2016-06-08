@@ -10,7 +10,7 @@
     <property name="lib" value="${basedir}/lib" />
     <property name="test-lib" value="${basedir}/lib-test" />
     
-    <property name="version" value="0.7.4" />
+    <property name="version" value="0.8.0" />
   	
   	<property name="product-jar" value="${basedir}/${ant.project.name}-${version}.jar" />
   </target>
@@ -38,8 +38,8 @@
   <target name="compile" depends="init,resolve">
     <javac srcdir="${source}" destdir="${classes}"
            debug="on"
-           source="1.6"
-           target="1.6"
+           source="1.8"
+           target="1.8"
            includeantruntime="false"
            deprecation="off">
       <classpath>

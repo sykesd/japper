@@ -12,7 +12,7 @@ import java.sql.Date;
 import java.util.*;
 
 /*
- * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
+ * Copyright (c) 2012-2016, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -72,9 +72,139 @@ public class Japper {
   
   private static final Log log = LogFactory.getLog(Japper.class);
 
+  public static class Config {
+    private int fetchSize = 500;
+
+    public void setFetchSize(int fetchSize) {
+      this.fetchSize = fetchSize;
+    }
+
+    public int getFetchSize() {
+      return fetchSize;
+    }
+  }
+
+  public static final Config DEFAULT_CONFIG = new Config();
+
+
+
+  /**
+   * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
+   * in a form that they can be streamed.
+   * <p>
+   *
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @param <T>
+   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable} or as a {@link java.util.stream.Stream}.
+   */
+  public static <T> JapperStreamingResult<T> streamableOf(Connection conn, Class<T> resultType, String sql, Object...params) {
+    return streamableOf(DEFAULT_CONFIG, conn, resultType, null, sql, params);
+  }
+
+
+  /**
+   * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
+   * in a form that they can be streamed.
+   * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
+   *
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @param <T>
+   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable} or as a {@link java.util.stream.Stream}.
+   */
+  public static <T> JapperStreamingResult<T> streamableOf(Config config, Connection conn, Class<T> resultType, String sql, Object...params) {
+    return streamableOf(config, conn, resultType, null, sql, params);
+  }
+
+  /**
+   * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
+   * in a form that they can be streamed.
+   * <p>
+   *
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @param <T>
+   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable} or as a {@link java.util.stream.Stream}.
+   */
+  public static <T> JapperStreamingResult<T> streamableOf(Config config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
+    Profile profile = new Profile(resultType, sql);
+
+    boolean needsCleanup = true;
+
+    PreparedStatement ps = null;
+    try {
+      ps = prepareSql(profile, config, conn, sql, params);
+
+      profile.startQuery();
+      ResultSetMetaData metaData = ps.getMetaData();
+      if (rowProcessor != null) {
+        rowProcessor.prepare(metaData);
+      }
+      logMetaData(metaData);
+
+      ResultSet rs = ps.executeQuery();
+      profile.stopQuery();
+
+      profile.startMap();
+      Mapper<T> mapper = getMapper(resultType, sql, metaData);
+      profile.stopMapperCreation();
+
+      needsCleanup = false;
+      return new JapperStreamingResult<T>(ps, rs, mapper, rowProcessor, profile);
+    }
+    catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      if (needsCleanup) {
+        Throwable exceptionDuringDispose = null;
+        if (rowProcessor != null) {
+          try {
+            rowProcessor.dispose();
+          }
+          catch (Throwable t) {
+            exceptionDuringDispose = t;
+          }
+        }
+
+        try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
+
+        if (exceptionDuringDispose != null) {
+          if (exceptionDuringDispose instanceof JapperException) {
+            throw (JapperException) exceptionDuringDispose;
+          }
+          throw new JapperException(exceptionDuringDispose);
+        }
+      }
+    }
+  }
+
+
+
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
-   * resultType
+   * resultType.
+   * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
    *
    * @param conn the connection to execute the query on
    * @param resultType the result to map the query results to
@@ -84,13 +214,29 @@ public class Japper {
    * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
    */
   public static <T> List<T> query(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
+    return query(DEFAULT_CONFIG, conn, resultType, rowProcessor, sql, params);
+  }
+
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType
+   *
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   */
+  public static <T> List<T> query(Config config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     Profile profile = new Profile(resultType, sql);
 
     List<T> result = new ArrayList<T>();
 
     PreparedStatement ps = null;
     try {
-      ps = prepareSql(profile, conn, sql, params);
+      ps = prepareSql(profile, config, conn, sql, params);
 
       profile.startQuery();
       ResultSetMetaData metaData = ps.getMetaData();
@@ -153,6 +299,9 @@ public class Japper {
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
    * resultType
+   * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
    *
    * @param conn the connection to execute the query on
    * @param resultType the result to map the query results to
@@ -161,7 +310,22 @@ public class Japper {
    * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
    */
   public static <T> List<T> query(Connection conn, Class<T> resultType, String sql, Object...params) {
-    return query(conn, resultType, null, sql, params);
+    return query(DEFAULT_CONFIG, conn, resultType, null, sql, params);
+  }
+
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType
+   *
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   */
+  public static <T> List<T> query(Config config, Connection conn, Class<T> resultType, String sql, Object...params) {
+    return query(config, conn, resultType, null, sql, params);
   }
 
 
@@ -173,6 +337,9 @@ public class Japper {
    * and then returns the first element of the returned list. It is assumed the caller
    * is not issuing a query that returns thousands of rows and then only wants the first one
    * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
+   *
    * @param conn the connection to execute the query on
    * @param resultType the result to map the query results to
    * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
@@ -181,6 +348,26 @@ public class Japper {
    * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
    */
   public static <T> T queryOne(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
+    return queryOne(DEFAULT_CONFIG, conn, resultType, rowProcessor, sql, params);
+  }
+
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * resultType. Return only the first result returned.
+   * <p>
+   * NOTE: at present this implementation of this is very naive. It simply calls query()
+   * and then returns the first element of the returned list. It is assumed the caller
+   * is not issuing a query that returns thousands of rows and then only wants the first one
+   * <p>
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param resultType the result to map the query results to
+   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
+   */
+  public static <T> T queryOne(Config config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     List<T> results = query(conn, resultType, rowProcessor, sql, params);
     if (results.size() > 0) {
       return results.get(0);
@@ -196,6 +383,9 @@ public class Japper {
    * and then returns the first element of the returned list. It is assumed the caller
    * is not issuing a query that returns thousands of rows and then only wants the first one
    * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
+   *
    * @param conn the connection to execute the query on
    * @param resultType the result to map the query results to
    * @param sql the SQL statement to execute
@@ -203,30 +393,43 @@ public class Japper {
    * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
    */
   public static <T> T queryOne(Connection conn, Class<T> resultType, String sql, Object...params) {
-    List<T> results = query(conn, resultType, null, sql, params);
-    if (results.size() > 0) {
-      return results.get(0);
-    }
-    return null;
+    return queryOne(DEFAULT_CONFIG, conn, resultType, (RowProcessor<T>)null, sql, params);
   }
 
-  
-  
+
+
   /**
    * Execute the given SQL query on the given connection, returning the result as a
    * {@link QueryResult}.
-   * 
+   * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
+   *
    * @param conn the connection to execute the query on
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return the result set as a {@link QueryResult}
    */
   public static QueryResult query(Connection conn, String sql, Object...params) {
+    return query(DEFAULT_CONFIG, conn, sql, params);
+  }
+
+  /**
+   * Execute the given SQL query on the given connection, returning the result as a
+   * {@link QueryResult}.
+   *
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the result set as a {@link QueryResult}
+   */
+  public static QueryResult query(Config config, Connection conn, String sql, Object...params) {
     Profile profile = new Profile(ResultSet.class, sql);
     
     PreparedStatement ps = null;
     try {
-      ps = prepareSql(profile, conn, sql, params);
+      ps = prepareSql(profile, config, conn, sql, params);
       
       profile.startQuery();
       ResultSetMetaData metaData = ps.getMetaData();
@@ -252,8 +455,8 @@ public class Japper {
       throw new JapperException(sqlEx);
     }
   }
-  
-  
+
+
   /**
    * Execute the given SQL statement on the given {@link Connection}, returning the
    * number of rows affected.
@@ -261,18 +464,39 @@ public class Japper {
    * This method is designed for issuing UPDATE/DELETE or other non-query SQL statements
    * on the database, but taking advantage of all of the parameter parsing, setting and
    * conversions offered by Japper.
-   * 
+   * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
+   *
    * @param conn the connection to execute the query on
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return the number of rows affected by the given statement
    */
   public static int execute(Connection conn, String sql, Object...params) {
+    return execute(DEFAULT_CONFIG, conn, sql, params);
+  }
+
+  /**
+   * Execute the given SQL statement on the given {@link Connection}, returning the
+   * number of rows affected.
+   * <p>
+   * This method is designed for issuing UPDATE/DELETE or other non-query SQL statements
+   * on the database, but taking advantage of all of the parameter parsing, setting and
+   * conversions offered by Japper.
+   *
+   * @param config the {@link Config} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query
+   * @return the number of rows affected by the given statement
+   */
+  public static int execute(Config config, Connection conn, String sql, Object...params) {
     Profile profile = new Profile("statement", int.class, sql);
     
     PreparedStatement ps = null;
     try {
-      ps = prepareSql(profile, conn, sql, params);
+      ps = prepareSql(profile, config, conn, sql, params);
 
       profile.startQuery();
       int rowsAffected = ps.executeUpdate();
@@ -459,22 +683,14 @@ public class Japper {
     return cs;
   }
   
-  private static PreparedStatement prepareSql(Profile profile, Connection conn, String sql, Object...params) throws SQLException {
+  private static PreparedStatement prepareSql(Profile profile, Config config, Connection conn, String sql, Object...params) throws SQLException {
     profile.startPrep();
     ParameterParser parser = new ParameterParser(sql, params).parse();
     
     profile.setSql(parser.getSql());
     PreparedStatement ps = conn.prepareStatement(parser.getSql());
     
-    /*
-     * For some testing over a remote connection, we want to make sure the query results
-     * get loaded in a single round-trip
-     * 500 is a good size for these tests
-     * 
-     * TODO think a bit more about whether this is a good default, or whether this
-     * needs to be a parameter
-     */
-    ps.setFetchSize(500); 
+    ps.setFetchSize(config.getFetchSize());
     
     if (params != null && params.length > 0) {
       for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
@@ -627,7 +843,7 @@ public class Japper {
   }
 
   
-  private static class Profile {
+  static class Profile {
     private String dmlType;
     
     private Class<?> type;
