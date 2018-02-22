@@ -322,7 +322,7 @@ public class MapperCodeGenerator {
       }
     }
     
-    throw new IllegalArgumentException("Cannot convert from "+ps.readType.getName()+" to "+ps.writeType.getName());
+    throw new IllegalArgumentException("Cannot convert from "+ps.readType.getName()+" to "+ps.writeType.getName()+", property: "+ps.readerMethod+"/"+ps.writerMethod);
   }
 
   
