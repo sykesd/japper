@@ -44,7 +44,7 @@ public class ParameterParser {
 
   public class ParameterValue {
     private final String name;
-    private final Object value;
+    private Object value;
     private final int replaceCount;
     private final List<Integer> startIndexes = new ArrayList<Integer>();
 
@@ -85,6 +85,10 @@ public class ParameterParser {
     }
 
     public Object getValue() { return value; }
+
+    void setValue(Object value) {
+      this.value = value;
+    }
 
     public int getReplaceCount() { return replaceCount; }
 
@@ -130,22 +134,24 @@ public class ParameterParser {
 
   private Map<String, ParameterValue> paramValueMap = new HashMap<String, ParameterValue>();
 
+  /**
+   * Are we parsing the statement for use in a JDBC batch?
+   */
+  private boolean parsingForBatch;
+
   public ParameterParser(String query, Object...params) {
     this.originalSql = query;
 
-    if (params != null && params.length > 0) {
-      if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
-
-      for (int i = 0; i < params.length; i += 2) {
-        String name = (String) params[i];
-        Object value = params[i + 1];
-        paramValueMap.put(name.toLowerCase(), new ParameterValue(name, value));
-      }
-    }
+    parseParameters(params);
   }
-  
+
   public ParameterParser parse() {
-    
+    return parse(false);
+  }
+
+  public ParameterParser parse(boolean forBatch) {
+    this.parsingForBatch = forBatch;
+
     for (int index = 0; index < originalSql.length(); ) {
       int ch = originalSql.charAt(index);
       boolean consume = handleChar(ch);
@@ -159,11 +165,58 @@ public class ParameterParser {
     return this;
   }
 
+  /**
+   * Set the values to those referenced in the given parameter set.
+   * <p>
+   * This method replaces the current values with those
+   * </p>
+   * @param params
+   */
+  public void setNextParameterValueSet(Object[] params) {
+    // save away the current list of parameters - this will be the complete list referenced by
+    // the query
+    Map<String, ParameterValue> originalMap = new HashMap<>(paramValueMap);
+
+    // clear the internal field and then parse the the new parameter list into it
+    paramValueMap.clear();
+    parseParameters(params);
+
+    // now we need to restore the original map, clear all the values...
+    Map<String, ParameterValue> newSet = new HashMap<>(paramValueMap);
+    paramValueMap.clear();
+    paramValueMap.putAll(originalMap);
+    paramValueMap.values().forEach(value -> value.setValue(null));
+
+    // ...and set all the new ones given
+    Set<String> names = paramValueMap.keySet();
+    newSet.keySet().stream()
+            .filter(names::contains)
+            .forEach(name -> paramValueMap.get(name).setValue(newSet.get(name).getValue()))
+    ;
+  }
+
   public Collection<ParameterValue> getParameterValues() {
     return Collections.unmodifiableCollection(paramValueMap.values());
   }
 
   public String getSql() { return resultSql; }
+
+  /**
+   * Parse the parameter values set and populate the {@link #paramValueMap} with the name/value pairs.
+   *
+   * @param params the parameter set to parse
+   */
+  private void parseParameters(Object[] params) {
+    if (params != null && params.length > 0) {
+      if (params.length % 2 != 0) throw new IllegalArgumentException("Mismatched param/value pairs!");
+
+      for (int i = 0; i < params.length; i += 2) {
+        String name = (String) params[i];
+        Object value = params[i + 1];
+        paramValueMap.put(name.toLowerCase(), new ParameterValue(name, value));
+      }
+    }
+  }
 
   /**
    * Get the given parameter value.
@@ -257,6 +310,10 @@ public class ParameterParser {
   
   private void addParamRef() {
     String name = paramName.toString().toLowerCase();
+    if (parsingForBatch) {
+      paramValueMap.put(name, new ParameterValue(name, null));
+    }
+
     ParameterValue paramValue = paramValueMap.get(name);
     if (paramValue == null) {
       throw new IllegalArgumentException("Referenced parameter has no value: "+paramName.toString());

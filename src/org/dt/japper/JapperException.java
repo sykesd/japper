@@ -1,6 +1,8 @@
 package org.dt.japper;
 
+import java.sql.BatchUpdateException;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /*
  * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
@@ -38,8 +40,54 @@ import java.sql.SQLException;
 
 public class JapperException extends RuntimeException {
 
+  /**
+   * Create a {@link JapperException} instance wrapping the given {@link BatchUpdateException}.
+   * <p>
+   * Try to figure out which set of parameters was the one that caused the error and
+   * include that information in the exception message.
+   *
+   * </p>
+   * @param buEx the {@link BatchUpdateException} thrown when executing the statement batch
+   * @param batchSize the size of the batch that was executed
+   * @return a {@link JapperException} wrapping the root cause, hopefully including which parameter set the error occurred on
+   */
+  public static final JapperException fromBatchUpdate(BatchUpdateException buEx, int batchSize) {
+    // try and figure out which statement was the one that caused the exception!
+    int[] updateCounts = buEx.getUpdateCounts();
+    if (updateCounts == null) {
+      // we definitely can't determine the root cause here - fall back to default error report
+      return new JapperException(buEx);
+    }
+
+    if (updateCounts.length < batchSize) {
+      // this library/server-combo only returns the update counts for those statements that succeeded
+      // this means that the updateCounts.length == index of bad parameter set
+      int badIndex = updateCounts.length;
+      return new JapperException("Occurred executing parameter set# " + badIndex, buEx);
+    }
+
+    // this library/combo hopefully reports the bad statement with the Statement.EXECUTE_FAILED value
+    // look for it
+    int badIndex = -1;
+    for (int index = 0; index < updateCounts.length; index++) {
+      if (updateCounts[index] == Statement.EXECUTE_FAILED) {
+        // found it - report it in the error
+        badIndex = index;
+        return new JapperException("Occurred executing parameter batch# " + badIndex, buEx);
+      }
+    }
+
+    // couldn't figure out the bad statement index - just fall back to the default exception
+    return new JapperException(buEx);
+  }
+
+
   public JapperException(Throwable cause) {
     super("Error executing Japper query", cause);
   }
-  
+
+  public JapperException(String message, Throwable cause) {
+    super("Error executing Japper query: " + message, cause);
+  }
+
 }

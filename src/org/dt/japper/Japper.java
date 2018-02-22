@@ -75,6 +75,47 @@ public class Japper {
   public static final JapperConfig DEFAULT_CONFIG = new JapperConfig();
 
 
+  /**
+   * Constant to indicate that no parameters are included/needed
+   */
+  public static final Object[] NO_PARAMS = {};
+
+  /**
+   * Helper method to assist in calling {@link #executeBatch(JapperConfig, Connection, String, List)}.
+   * <p>
+   * Is shorter and more convenient than having to type {@code Arrays.&lt;Object[]&gt;asList(...)}
+   * </p>
+   *
+   * @param paramLists the array of {@code Object[]} parameter lists to put together into a single {@link List}
+   * @return the {@link List} of parameter lists ({@code Object[]})
+   */
+  public static List<Object[]> paramLists(Object[]...paramLists) {
+    if (paramLists == null) {
+      return Collections.emptyList();
+    }
+
+    return Arrays.asList(paramLists);
+  }
+
+  /**
+   * Helper method to assist in calling {@link #executeBatch(JapperConfig, Connection, String, List)}.
+   * <p>
+   * Together with {@link #paramLists(Object[]...)} makes it possible to construct the parameter lists
+   * in-line. For example:
+   * </p>
+   * <pre style="code">
+   *     Japper.executeBatch(..., paramLists(
+   *         params("P1", "value1", "P2", 2)
+   *       , params("P2", 3, "P1", "value1")
+   *     ));
+   * </pre>
+   * @param params the parameter list
+   * @return the parameter list as an {@code Object[]}
+   */
+  public static Object[] params(Object...params) {
+    return params != null ? params : NO_PARAMS;
+  }
+
 
   /**
    * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
@@ -509,6 +550,102 @@ public class Japper {
     }
   }
 
+
+  /**
+   * Execute the given statement several times on the given {@link Connection} with a list of
+   * parameters as a JDBC batch.
+   * <p>
+   * The main use-case for this method is for inserting a batch of records in the minimum number
+   * of round-trips to the database.
+   * <p>
+   * This method is only useful for the case where you have exactly the same SQL statement to be
+   * executed a number of times with a different set of parameters each time. That is, a single
+   * {@link PreparedStatement} instance is created and {@link PreparedStatement#addBatch()} is
+   * called for each set a parameters.
+   * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
+   *
+   * @param conn the connection to execute the query on
+   * @param sql the SQL statement to execute
+   * @param paramsList a {@link List} of parameter sets
+   * @return the total number of rows affected by the batch
+   */
+  public static int executeBatch(Connection conn, String sql, List<Object[]> paramsList) {
+    return executeBatch(DEFAULT_CONFIG, conn, sql, paramsList);
+  }
+
+  /**
+   * Execute the given statement several times on the given {@link Connection} with a list of
+   * parameters as a JDBC batch.
+   * <p>
+   * The main use-case for this method is for inserting a batch of records in the minimum number
+   * of round-trips to the database.
+   * <p>
+   * This method is only useful for the case where you have exactly the same SQL statement to be
+   * executed a number of times with a different set of parameters each time. That is, a single
+   * {@link PreparedStatement} instance is created and {@link PreparedStatement#addBatch()} is
+   * called for each set a parameters.
+   *
+   * @param config the {@link JapperConfig} to use when executing this query
+   * @param conn the connection to execute the query on
+   * @param sql the SQL statement to execute
+   * @param paramsList a {@link List} of parameter sets
+   * @return the total number of rows affected by the batch
+   */
+  public static int executeBatch(JapperConfig config, Connection conn, String sql, List<Object[]> paramsList) {
+    Profile profile = new Profile("statement", int.class, sql);
+
+    PreparedStatement ps = null;
+    try {
+      PreparedBatch batch = prepareSqlForBatch(profile, config, conn, sql);
+
+      for (Object[] params : paramsList) {
+        addToBatch(profile, batch, params);
+      }
+
+      profile.stopPrep();
+
+      profile.startQuery();
+      ps = batch.getStatement();
+      int[] updateCounts = ps.executeBatch();
+      profile.stopQuery();
+
+      profile.end();
+      profile.log();
+
+      int rowsAffected = 0;
+      for (int updateCount : updateCounts) {
+        if (updateCount >= 0) {
+          rowsAffected += updateCount;
+        }
+      }
+
+      return rowsAffected;
+    }
+    catch (BatchUpdateException buEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
+      throw JapperException.fromBatchUpdate(buEx, paramsList.size());
+    }
+    catch (SQLException sqlEx) {
+      try {
+        profile.end();
+        profile.log();
+      }
+      catch (Throwable ignoredExceptionDuringProfileLog) { }
+
+      throw new JapperException(sqlEx);
+    }
+    finally {
+      try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
+    }
+  }
+
   /**
    * Execute a SQL statement on the given {@link Connection}, and map
    * the result of the call to the given target type.
@@ -653,6 +790,7 @@ public class Japper {
     CallableStatement cs = conn.prepareCall(parser.getSql());
 
     if (params != null && params.length > 0) {
+      profile.nextParamSet();
       for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
         profile.setParam(paramValue.getName(), paramValue.getValue(), paramValue.getFirstIndex());
 
@@ -670,7 +808,55 @@ public class Japper {
     profile.stopPrep();
     return cs;
   }
-  
+
+  private static class PreparedBatch {
+    private final PreparedStatement ps;
+    private final ParameterParser parser;
+
+    private PreparedBatch(PreparedStatement ps, ParameterParser parser) {
+      this.ps = ps;
+      this.parser = parser;
+    }
+
+    public PreparedStatement getStatement() {
+      return ps;
+    }
+
+    public ParameterParser getParser() {
+      return parser;
+    }
+  }
+
+  private static PreparedBatch prepareSqlForBatch(Profile profile, JapperConfig config, Connection conn, String sql) throws SQLException {
+    profile.startPrep();
+    ParameterParser parser = new ParameterParser(sql, NO_PARAMS).parse(true);
+
+    profile.setSql(parser.getSql());
+    PreparedStatement ps = conn.prepareStatement(parser.getSql());
+
+    ps.setFetchSize(config.getFetchSize());
+
+    return new PreparedBatch(ps, parser);
+  }
+
+  private static void addToBatch(Profile profile, PreparedBatch batch, Object...params) throws SQLException {
+    PreparedStatement ps = batch.getStatement();
+    ps.clearParameters();
+
+    ParameterParser parser = batch.getParser();
+    parser.setNextParameterValueSet(params);
+
+    if (params != null && params.length > 0) {
+      profile.nextParamSet();
+      for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
+        profile.setParam( paramValue.getName(), paramValue.getValue(), paramValue.getFirstIndex() );
+        setParameter(ps, paramValue);
+      }
+    }
+
+    ps.addBatch();
+  }
+
   private static PreparedStatement prepareSql(Profile profile, JapperConfig config, Connection conn, String sql, Object...params) throws SQLException {
     profile.startPrep();
     ParameterParser parser = new ParameterParser(sql, params).parse();
@@ -681,6 +867,7 @@ public class Japper {
     ps.setFetchSize(config.getFetchSize());
     
     if (params != null && params.length > 0) {
+      profile.nextParamSet();
       for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
         profile.setParam( paramValue.getName(), paramValue.getValue(), paramValue.getFirstIndex() );
         setParameter(ps, paramValue);
@@ -832,6 +1019,12 @@ public class Japper {
 
   
   static class Profile {
+    static class ParamSet {
+      private List<String> names = new ArrayList<String>();
+      private List<String> values = new ArrayList<String>();
+      private List<Integer> indexes = new ArrayList<Integer>();
+    }
+
     private String dmlType;
     
     private Class<?> type;
@@ -862,10 +1055,8 @@ public class Japper {
     private String originalSql;
     private String sql;
     
-    private List<String> names = new ArrayList<String>();
-    private List<String> values = new ArrayList<String>();
-    private List<Integer> indexes = new ArrayList<Integer>();
-    
+    private List<ParamSet> paramSets = new ArrayList<>();
+
     public Profile(Class<?> type, String originalSql) {
       this("query", type, originalSql);
     }
@@ -878,11 +1069,15 @@ public class Japper {
     }
     
     public void setSql(String sql) { this.sql = sql; }
-    
+
+    public void nextParamSet() {
+      paramSets.add(new ParamSet());
+    }
+
     public void setParam(String name, Object value, Integer firstIndex) {
-      names.add(name);
-      values.add(value == null ? "(null)" : value.toString());
-      indexes.add(firstIndex);
+      currentParamSet().names.add(name);
+      currentParamSet().values.add(value == null ? "(null)" : value.toString());
+      currentParamSet().indexes.add(firstIndex);
     }
     
     public void startPrep() { prepStart = System.nanoTime(); }
@@ -922,9 +1117,19 @@ public class Japper {
       log.info(dmlType+"("+type.getName()+"):");
       log.info("  original: "+originalSql);
       log.info("  executed: "+sql);
-      if (log.isDebugEnabled() && !names.isEmpty()) {
-        for (int i = 0; i < names.size(); i++) {
-          log.debug("  "+names.get(i)+" = "+values.get(i)+" @ "+indexes.get(i));
+      if (log.isDebugEnabled() && !paramSets.isEmpty()) {
+        boolean batch = paramSets.size() > 1;
+
+        for (int setIndex = 0; setIndex < paramSets.size(); setIndex++) {
+          ParamSet paramSet = paramSets.get(setIndex);
+          String indent = "";
+          if (batch) {
+            log.debug("  param set: " + setIndex);
+            indent = "  ";
+          }
+          for (int i = 0; i < paramSet.names.size(); i++) {
+            log.debug(indent + "  " + paramSet.names.get(i) + " = " + paramSet.values.get(i) + " @ " + paramSet.indexes.get(i));
+          }
         }
       }
       log.info("  preparation: "+nicify(prepStart, prepEnd));
@@ -939,6 +1144,10 @@ public class Japper {
         log.info("                      avg. row: "+nicify((long) avgPerRow()));
       }
       log.info("Total: "+nicify(globalStart, globalEnd));
+    }
+
+    private ParamSet currentParamSet() {
+      return paramSets.get(paramSets.size()-1);
     }
 
     private static final long MILLI_THRESHOLD = 10000000L;
