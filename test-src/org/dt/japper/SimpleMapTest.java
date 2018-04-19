@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.dt.japper.testmodel.DelegatedPartModel;
 import org.dt.japper.testmodel.PartModel;
 import org.dt.japper.testmodel.PartPriceModel;
 import org.junit.BeforeClass;
@@ -239,4 +240,30 @@ public class SimpleMapTest {
     
     conn.close();
   }
+
+  private static final String SQL_DELEGATED_PARTS =
+          "   SELECT part.*, part.partno delegated_id "
+        + "     FROM part"
+        + " ORDER BY partno"
+          ;
+
+  /**
+   * Test case to reproduce the bug outlined here: https://github.com/sykesd/japper/issues/31
+   * We keep this test to guard against regressions.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void mapDelegatedParts() throws Exception {
+    Connection conn = testData.connect();
+
+    List<DelegatedPartModel> parts = Japper.query(conn, DelegatedPartModel.class, SQL_DELEGATED_PARTS);
+    assertEquals(3, parts.size());
+
+    DelegatedPartModel part = parts.get(0);
+    assertEquals("123456", part.getPartno());
+
+    conn.close();
+  }
+
 }
