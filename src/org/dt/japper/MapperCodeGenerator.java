@@ -6,6 +6,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -161,7 +162,7 @@ public class MapperCodeGenerator {
     
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
       PropertyDescriptor[] path = matcher.match(metaData.getColumnLabel(i), metaData.getTableName(i), metaData.getColumnName(i));
-      if (path != null) {
+      if (path != null && isWriteablePath(path)) {
         tempCounter = buildPropertySetter(setterSource, graphGuardMap, i, metaData, path, tempCounter);
       }
     }
@@ -171,7 +172,15 @@ public class MapperCodeGenerator {
     
     return source.toString();
   }
-  
+
+  private static boolean isWriteablePath(PropertyDescriptor[] path) {
+    return Arrays.stream(path)
+            .filter(pd -> pd.getWriteMethod() == null)
+            .findFirst()
+            .map(pd -> false)
+            .orElse(true)
+            ;
+  }
 
   private static class GraphGuardComparator implements Comparator<String> {
     @Override
@@ -247,7 +256,6 @@ public class MapperCodeGenerator {
     return tempCounter;
   }
 
-  
   private static String getNullValue(PropertySetter ps) {
     if (ps.writeType.isPrimitive()) {
       if (ps.writeType.equals(boolean.class)) return "false";
