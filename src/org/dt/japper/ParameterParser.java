@@ -310,7 +310,7 @@ public class ParameterParser {
   
   private void addParamRef() {
     String name = paramName.toString().toLowerCase();
-    if (parsingForBatch) {
+    if (parsingForBatch && !paramValueMap.containsKey(name)) {
       paramValueMap.put(name, new ParameterValue(name, null));
     }
 
