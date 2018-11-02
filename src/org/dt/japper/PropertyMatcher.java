@@ -1,6 +1,7 @@
 package org.dt.japper;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -504,7 +505,8 @@ public class PropertyMatcher {
     
     for (PropertyDescriptor descriptor : PropertyUtils.getPropertyDescriptors(type)) {
       if ("class".equals(descriptor.getName())) continue;
-      
+      if (isIgnored(descriptor)) continue;
+
       path.push(descriptor);
       
       if (MapperUtils.isSimpleType(descriptor.getPropertyType())) {
@@ -517,7 +519,39 @@ public class PropertyMatcher {
       path.pop();
     }
   }
-  
+
+  /**
+   * Should we ignore the given property?
+   * <p>
+   *     Some properties can be annotated to tell Japper to ignore them. This
+   *     method checks for this case.
+   * </p>
+   *
+   * @param descriptor the {@link PropertyDescriptor} describing the property to check
+   * @return {@code true} if it should be ignored, {@code false} otherwise
+   */
+  private boolean isIgnored(PropertyDescriptor descriptor) {
+    Method readMethod = descriptor.getReadMethod();
+    if (isIgnored(readMethod)) {
+      return true;
+    }
+
+    Method writeMethod = descriptor.getWriteMethod();
+    if (isIgnored(writeMethod)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private boolean isIgnored(Method method) {
+    if (method == null) {
+      return false;
+    }
+
+    return method.getAnnotation(JapperIgnore.class) != null;
+  }
+
   private static String pathToPrefix(List<PropertyDescriptor> path) {
     StringBuilder sb = new StringBuilder();
     for (PropertyDescriptor descriptor : path) {
