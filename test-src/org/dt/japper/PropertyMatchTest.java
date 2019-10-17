@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 
 import java.beans.PropertyDescriptor;
 
+import org.dt.japper.testmodel.ModelWithEnum;
 import org.junit.Test;
 
 /*
@@ -155,5 +156,19 @@ public class PropertyMatchTest {
 //    assertEquals("store", path[0].getName());
 //    assertEquals("branch", path[1].getName());
 //    assertEquals("sitecodePhysicalWarehouse", path[2].getName());
+  }
+
+  /**
+   * See https://github.com/sykesd/japper/issues/36
+   */
+  @Test
+  public void enumFieldsAreIgnored() {
+    PropertyMatcher matcher = new PropertyMatcher(ModelWithEnum.class);
+
+    PropertyDescriptor[] path = null;
+
+    path = matcher.match("ID", "", "ID");
+    assertNotNull(path);
+    // If we get to here, then our enum field was successfully ignored!
   }
 }

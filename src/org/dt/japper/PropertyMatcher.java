@@ -505,6 +505,7 @@ public class PropertyMatcher {
     
     for (PropertyDescriptor descriptor : PropertyUtils.getPropertyDescriptors(type)) {
       if ("class".equals(descriptor.getName())) continue;
+      if (isEnum(descriptor)) continue;
       if (isIgnored(descriptor)) continue;
 
       path.push(descriptor);
@@ -518,6 +519,16 @@ public class PropertyMatcher {
       
       path.pop();
     }
+  }
+
+  /**
+   * Is the type of property described in {@link PropertyDescriptor} an {@code enum}?
+   *
+   * @param descriptor the {@link PropertyDescriptor} to check
+   * @return {@code true} if the described property is an {@code enum}, {@code false} otherwise
+   */
+  private boolean isEnum(PropertyDescriptor descriptor) {
+    return descriptor.getPropertyType() != null && descriptor.getPropertyType().isEnum();
   }
 
   /**
