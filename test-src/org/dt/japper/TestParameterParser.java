@@ -1,7 +1,10 @@
 package org.dt.japper;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 /*
@@ -55,5 +58,28 @@ public class TestParameterParser {
     pp = new ParameterParser(sql, "p", "One more value").parse();
     assertEquals("select a from b where c = ? and d = ?", pp.getSql());
     assertEquals(2, pp.getParameterValue("p").getStartIndexes().size());
+  }
+
+  private static final String SQL_WITH_COMMENT =
+          " select /* this'll mess it up */ \n" +
+          "        stuff.\"some:thing\" \n" +
+          "      , 'lit:eral' something_else \n" +
+          "   from stuff \n" +
+          "  where param = :PARAM "
+          ;
+
+  private static final String PARSED_SQL_WITH_COMMENT =
+          " select /* this'll mess it up */ \n" +
+          "        stuff.\"some:thing\" \n" +
+          "      , 'lit:eral' something_else \n" +
+          "   from stuff \n" +
+          "  where param = ? "
+          ;
+  @Test
+  public void comentedSqlTests() {
+    ParameterParser pp = new ParameterParser(SQL_WITH_COMMENT, "PARAM", "Some value").parse();
+    assertThat(pp.getSql(), is(PARSED_SQL_WITH_COMMENT));
+    assertThat(pp.getParameterValue("PARAM").getStartIndexes().size(), is(1));
+    assertThat(pp.getParameterValue("PARAM").getStartIndexes().get(0), is(1));
   }
 }
