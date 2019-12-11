@@ -37,7 +37,7 @@ import org.junit.Test;
  * 
  */
 
-public class TestSqlBuilder {
+public class SqlBuilderTest {
 
   @Test
   public void simpleTemplateTest() {

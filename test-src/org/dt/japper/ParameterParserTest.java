@@ -40,7 +40,7 @@ import org.junit.Test;
  * 
  */
 
-public class TestParameterParser {
+public class ParameterParserTest {
 
   @Test
   public void parserTests() {

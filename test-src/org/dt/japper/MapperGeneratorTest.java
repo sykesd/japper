@@ -1,27 +1,25 @@
 package org.dt.japper;
 
-import static org.junit.Assert.assertEquals;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.CtNewMethod;
+import org.junit.Test;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
 
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.CtNewMethod;
-import javassist.NotFoundException;
+import static org.junit.Assert.assertEquals;
 
-import org.junit.Test;
-
-public class TestMapperGenerator {
+public class MapperGeneratorTest {
 
   @Test
   public void simpleInterfaceTest() throws Exception {
     ClassPool pool = new ClassPool(true); 
-    CtClass intf = pool.get("com.franke.pbs.japper.SimpleInterface");
-    CtClass impl = pool.makeClass("com.franke.pbs.japper.SimpleImpl");
+    CtClass intf = pool.get("org.dt.japper.SimpleInterface");
+    CtClass impl = pool.makeClass("org.dt.japper.SimpleImpl");
     impl.addInterface(intf);
     
     CtMethod fooImpl = CtNewMethod.make("public String foo() { return \"bar\"; }", impl);
@@ -35,11 +33,11 @@ public class TestMapperGenerator {
   @Test
   public void genericInterfaceTest() throws Exception {
     ClassPool pool = new ClassPool(true);
-    CtClass intf = pool.get("com.franke.pbs.japper.Mapper");
-    CtClass impl = pool.makeClass("com.franke.pbs.japper.Mapper_123");
+    CtClass intf = pool.get("org.dt.japper.Mapper");
+    CtClass impl = pool.makeClass("org.dt.japper.Mapper_123");
     impl.addInterface(intf);
     
-    CtMethod mapImpl = CtNewMethod.make("public Object map(java.sql.ResultSet rs) { return \"bar\"; }", impl);
+    CtMethod mapImpl = CtNewMethod.make("public Object map(java.sql.ResultSet rs, org.dt.japper.RowProcessor rowProcessor) { return \"bar\"; }", impl);
     impl.addMethod(mapImpl);
     
     @SuppressWarnings("unchecked")
@@ -59,11 +57,11 @@ public class TestMapperGenerator {
   @SuppressWarnings({"unchecked", "cast"})
   private <T> Class<Mapper<T>> createMapper(Class<T> resultType) throws Exception {
     ClassPool pool = new ClassPool(true);
-    CtClass intf = pool.get("com.franke.pbs.japper.Mapper");
-    CtClass impl = pool.makeClass("com.franke.pbs.japper.Mapper_123");
+    CtClass intf = pool.get("org.dt.japper.Mapper");
+    CtClass impl = pool.makeClass("org.dt.japper.Mapper_234");
     impl.addInterface(intf);
     
-    CtMethod mapImpl = CtNewMethod.make("public Object map(java.sql.ResultSet rs) { return \"bar\"; }", impl);
+    CtMethod mapImpl = CtNewMethod.make("public Object map(java.sql.ResultSet rs, org.dt.japper.RowProcessor rowProcessor) { return \"bar\"; }", impl);
     impl.addMethod(mapImpl);
     
     return (Class<Mapper<T>>) impl.toClass();
