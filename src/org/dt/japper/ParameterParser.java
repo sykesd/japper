@@ -149,16 +149,52 @@ public class ParameterParser {
     return parse(false);
   }
 
+  /**
+   * Simple iterator-like class for managing the current position in the input SQL
+   * and allowing lookahead to aid in parsing comments
+   */
+  private static class InputChar {
+    private final String input;
+    private int index;
+    private int length;
+
+    private InputChar(String input) {
+      this.input = input;
+      this.index = 0;
+      this.length = input.length();
+    }
+
+    public boolean inBounds() {
+      return index < length;
+    }
+
+    public int get() {
+      if (!inBounds()) {
+        return EOS;
+      }
+      return input.charAt(index);
+    }
+
+    public void consume() {
+      index++;
+    }
+
+    @Override
+    public String toString() {
+      return "InputChar{inBounds=" + inBounds() + ", index=" + index + ", char=" + (inBounds() ? (char) get() : ' ') + "}";
+    }
+  }
+
   public ParameterParser parse(boolean forBatch) {
     this.parsingForBatch = forBatch;
 
-    for (int index = 0; index < originalSql.length(); ) {
-      int ch = originalSql.charAt(index);
-      boolean consume = handleChar(ch);
-      
-      if (consume) index++;
+    InputChar input = new InputChar(originalSql);
+    while (input.inBounds()) {
+      handleChar(input);
     }
-    handleChar(EOS);
+
+    // Do one more handleChar(...) in the "out-of-bounds" state to make sure we capture any remaining input
+    handleChar(input);
     
     resultSql = sql.toString();
     
@@ -230,63 +266,83 @@ public class ParameterParser {
     return paramValueMap.get(name.toLowerCase());
   }
 
-  private enum State { IN_SQL, PARAM_START, PARAM_NAME, IN_SINGLE, IN_DOUBLE }
+  private enum State { IN_SQL, PARAM_START, PARAM_NAME, IN_SINGLE, IN_DOUBLE, IN_COMMENT  }
   private State state = State.IN_SQL;
-  
+
   private static final int EOS = -1;
   private StringBuffer sql = new StringBuffer();
   private StringBuffer paramName = new StringBuffer();
   private int paramRefIndex = 1;
   
-  private boolean handleChar(int ch) {
+  private void handleChar(InputChar input) {
     switch(state) {
       case IN_SQL:
-        return handleInSQL(ch);
+        handleInSQL(input);
+        return;
         
       case PARAM_START:
-        return handleParamStart(ch);
+        handleParamStart(input);
+        return;
         
       case PARAM_NAME:
-        return handleParamName(ch);
-        
+        handleParamName(input);
+        return;
+
+      case IN_COMMENT:
+        handleInComment(input);
+        return;
+
       case IN_DOUBLE:
-        return handleInDouble(ch);
+        handleInDouble(input);
+        return;
         
       case IN_SINGLE:
-        return handleInSingle(ch);
+        handleInSingle(input);
+        return;
     }
     
-    throw new IllegalStateException("In state "+state+", could not process char "+((char) ch));
+    throw new IllegalStateException("In state " + state + ", could not process char " + input);
   }
   
-  private boolean handleInSQL(int ch) {
-    if (ch == EOS) {
-      return true;
+  private void handleInSQL(InputChar input) {
+    if (!input.inBounds()) {
+      return;
     }
-    
+
+    int ch = input.get();
     if (ch == ':') {
       state = State.PARAM_START;
-      return true;
+      input.consume();
+      return;
     }
-    
+
     addToResult(ch);
-    
+    input.consume();
+
     if (ch == '\'') {
       state = State.IN_SINGLE;
     }
     else if (ch == '"') {
       state = State.IN_DOUBLE;
     }
-    
-    return true;
+    else if (ch == '/' && input.get() == '*') {
+      addToResult('*');
+      // Make sure to consume the '*' as well before continuing
+      input.consume();
+      state = State.IN_COMMENT;
+    }
+
   }
 
-  private boolean handleParamStart(int ch) {
+  private void handleParamStart(InputChar input) {
+    int ch = input.get();
+
     if (Character.isLetter((char) ch)) {
       paramName.setLength(0);
       paramName.append((char) ch);
       state = State.PARAM_NAME;
-      return true;
+      input.consume();
+      return;
     }
     
     // This is basically an unknown use of the colon - just add it to the output
@@ -294,18 +350,22 @@ public class ParameterParser {
     addToResult(':');
     addToResult(ch);
     state = State.IN_SQL;
-    return true;
+    input.consume();
+    return;
   }
   
-  private boolean handleParamName(int ch) {
+  private void handleParamName(InputChar input) {
+    int ch = input.get();
+
     if (Character.isLetterOrDigit((char) ch) || ch == '_') {
       paramName.append((char) ch);
-      return true;
+      input.consume();
+      return;
     }
     
     addParamRef();
     state = State.IN_SQL;
-    return false;       // we need to process this character again, but from the IN_SQL state
+    // We need to process this character again, but from the IN_SQL state, so we don't consume it
   }
   
   private void addParamRef() {
@@ -328,23 +388,43 @@ public class ParameterParser {
       addToResult('?');
     }
   }
-  
-  private boolean handleInDouble(int ch) {
+
+  private void handleInComment(InputChar input) {
+    int ch = input.get();
+    addToResult(ch);
+    input.consume();
+
+    if (ch == '*' && input.get() == '/') {
+      addToResult('/');
+      input.consume();
+
+      state = State.IN_SQL;
+      return;
+    }
+  }
+
+  private void handleInDouble(InputChar input) {
+    int ch = input.get();
+
     if (ch == '"') {
       state = State.IN_SQL;
     }
     
     addToResult(ch);
-    return true;
+    input.consume();
+    return;
   }
   
-  private boolean handleInSingle(int ch) {
+  private void handleInSingle(InputChar input) {
+    int ch = input.get();
+
     if (ch == '\'') {
       state = State.IN_SQL;
     }
     
     addToResult(ch);
-    return true;
+    input.consume();
+    return;
   }
   
   private void addToResult(int ch) {
