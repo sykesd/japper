@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javassist.ClassClassPath;
 import javassist.ClassPool;
@@ -355,10 +356,10 @@ public class MapperCodeGenerator {
     return reference.toString();
   }
   
-  private static int counter = 1;
+  private static AtomicInteger counter = new AtomicInteger();
   
   private static String makeNewClassName() {
-    return "Mapper_"+counter++;
+    return "Mapper_" + counter.incrementAndGet();
   }
   
   
