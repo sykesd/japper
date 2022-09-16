@@ -84,8 +84,8 @@ public class MapperCodeGenerator {
         .toString();
     
     try {
-      if (log.isDebugEnabled()) {
-        log.debug("Generated method:\n"+source);
+      if (log.isTraceEnabled()) {
+        log.trace("Generated method:\n"+source);
       }
       
       CtMethod mapImpl = CtNewMethod.make(source, impl);

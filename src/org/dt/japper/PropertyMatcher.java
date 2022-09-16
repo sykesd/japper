@@ -477,8 +477,12 @@ public class PropertyMatcher {
   }
   
   private void dumpPropertyList() {
+    if (!log.isTraceEnabled()) {
+      return;
+    }
+
     for (Property property : properties) {
-      log.debug(property.name+" : "+property.depth);
+      log.trace(property.name+" : "+property.depth);
     }
   }
   
