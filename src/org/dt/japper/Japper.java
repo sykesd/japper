@@ -1,18 +1,33 @@
 package org.dt.japper;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.BatchUpdateException;
+import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.Date;
-import java.util.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /*
- * Copyright (c) 2012-2016, David Sykes and Tomasz Orzechowski
+ * Copyright (c) 2012-2022, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -1009,12 +1024,16 @@ public class Japper {
   
   
   private static void logMetaData(ResultSetMetaData metaData) throws SQLException {
-    if (!log.isDebugEnabled()) return;
-    
-    log.debug("ResultSet Meta Data:");
+    if (!log.isTraceEnabled()) return;
+
+    StringBuilder message = new StringBuilder("ResultSet Meta Data:");
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
-      log.debug("Column "+i+": "+metaData.getTableName(i)+"."+metaData.getColumnName(i)+" as "+metaData.getColumnLabel(i)+", type "+metaData.getColumnTypeName(i)+" ("+metaData.getColumnType(i)+")");
+      message.append("\n  ").append(i).append(": ")
+              .append(metaData.getTableName(i)).append(".").append(metaData.getColumnName(i)).append(" as ").append(metaData.getColumnLabel(i))
+              .append(", type ").append(metaData.getColumnTypeName(i)).append(" (").append(metaData.getColumnType(i)).append(")")
+              ;
     }
+    log.trace(message.toString());
   }
 
   
@@ -1076,8 +1095,25 @@ public class Japper {
 
     public void setParam(String name, Object value, Integer firstIndex) {
       currentParamSet().names.add(name);
-      currentParamSet().values.add(value == null ? "(null)" : value.toString());
+      currentParamSet().values.add(valueToString(value));
       currentParamSet().indexes.add(firstIndex);
+    }
+
+    private String valueToString(Object value) {
+      if (value == null) {
+        return "(null)";
+      }
+
+      if (!value.getClass().isArray()) {
+        return value.toString();
+      }
+
+      StringBuilder s = new StringBuilder("[");
+      for (int i = 0; i < Array.getLength(value); i++) {
+        s.append(i > 0 ? ", " : "").append(valueToString(Array.get(value, i)));
+      }
+      s.append("]");
+      return s.toString();
     }
     
     public void startPrep() { prepStart = System.nanoTime(); }
@@ -1114,36 +1150,81 @@ public class Japper {
     public void end() { globalEnd = System.nanoTime(); }
     
     public void log() {
-      log.info(dmlType+"("+type.getName()+"):");
-      log.info("  original: "+originalSql);
-      log.info("  executed: "+sql);
-      if (log.isDebugEnabled() && !paramSets.isEmpty()) {
-        boolean batch = paramSets.size() > 1;
+      if (!log.isInfoEnabled()) {
+        // Not even INFO log level - nothing to output
+        return;
+      }
 
-        for (int setIndex = 0; setIndex < paramSets.size(); setIndex++) {
-          ParamSet paramSet = paramSets.get(setIndex);
-          String indent = "";
-          if (batch) {
-            log.debug("  param set: " + setIndex);
-            indent = "  ";
-          }
-          for (int i = 0; i < paramSet.names.size(); i++) {
-            log.debug(indent + "  " + paramSet.names.get(i) + " = " + paramSet.values.get(i) + " @ " + paramSet.indexes.get(i));
-          }
+      // First line of log message is the high level - statement type, model type, total time and rows
+      StringBuilder message = new StringBuilder(dmlType);
+      formatTopLevelResult(message);
+      message.append(" =>").append(type.getName());
+
+      // Second line is the original query we actually executed, followed by any bind parameters
+      message.append("\n  SQL=").append(originalSql);
+      formatParamSets(message);
+
+      if (log.isDebugEnabled()) {
+        // Debug level! Include the time breakdown and the actual SQL executed
+        formatTimeBreakdown(message);
+        message.append("  sql=").append(sql);
+      }
+
+      log.info(message.toString());
+    }
+
+    private void formatTimeBreakdown(StringBuilder message) {
+      message.append("\n  [");
+      message.append("prep=").append(nicify(prepStart, prepEnd));
+      message.append(" query=").append(nicify(queryStart, queryEnd));
+      if (mapped) {
+        message.append(" map=").append(nicify(mapStart, mapEnd));
+      }
+      if (mapperCreationEnd != 0L && log.isDebugEnabled()) {
+        message.append(" {new=").append(nicify(mapperCreationStart, mapperCreationEnd));
+        message.append(" ttfr=").append(nicify(mapFirstRowStart, mapFirstRowEnd));
+        message.append(" avg=").append(nicify((long) avgPerRow()));
+        message.append("}");
+      }
+      message.append("]");
+    }
+
+    private void formatTopLevelResult(StringBuilder message) {
+      message.append(" (");
+      if (mapperCreationEnd != 0L) {
+        message.append(rowCount).append(" rows in ");
+      }
+      message.append(nicify(globalStart, globalEnd)).append(")");
+    }
+
+    private void formatParamSets(StringBuilder message) {
+      if (paramSets.isEmpty()) {
+        return;
+      }
+
+      boolean batch = paramSets.size() > 1;
+
+      for (int setIndex = 0; setIndex < paramSets.size(); setIndex++) {
+        ParamSet paramSet = paramSets.get(setIndex);
+        message.append("\n ");
+        if (batch) {
+          message.append(" Set# ").append(setIndex).append("=");
+        }
+
+        for (int i = 0; i < paramSet.names.size(); i++) {
+          formatParam(message, paramSet, i);
         }
       }
-      log.info("  preparation: "+nicify(prepStart, prepEnd));
-      log.info("        query: "+nicify(queryStart, queryEnd));
-      if (mapped) {
-        log.info("          map: "+nicify(mapStart, mapEnd));
+    }
+
+    private void formatParam(StringBuilder message, ParamSet paramSet, int i) {
+      message.append(" :").append(paramSet.names.get(i));
+
+      if (log.isDebugEnabled()) {
+        message.append("@").append(paramSet.indexes.get(i));
       }
-      if (mapperCreationEnd != 0L) {
-        log.info("                     row count: "+rowCount);
-        log.info("               mapper creation: "+nicify(mapperCreationStart, mapperCreationEnd));
-        log.info("                     first row: "+nicify(mapFirstRowStart, mapFirstRowEnd));
-        log.info("                      avg. row: "+nicify((long) avgPerRow()));
-      }
-      log.info("Total: "+nicify(globalStart, globalEnd));
+
+      message.append("= ").append(paramSet.values.get(i));
     }
 
     private ParamSet currentParamSet() {
