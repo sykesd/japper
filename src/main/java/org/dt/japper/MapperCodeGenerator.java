@@ -264,6 +264,7 @@ public class MapperCodeGenerator {
       if (ps.writeType.equals(boolean.class)) return "false";
       if (ps.writeType.equals(float.class) || ps.writeType.equals(double.class)) return "0.0";
       if (ps.writeType.equals(long.class)) return "0L";
+      if (ps.writeType.equals(int.class) || ps.writeType.equals(short.class)) return "0";
       return "0";
     }
     
@@ -291,26 +292,100 @@ public class MapperCodeGenerator {
     }
 
     if (ps.writeType.equals(BigDecimal.class)) {
-      if (ps.readType.equals(int.class) || ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+      if (ps.readType.equals(short.class) ||
+          ps.readType.equals(int.class) ||
+          ps.readType.equals(long.class) ||
+          ps.readType.equals(float.class) ||
+          ps.readType.equals(double.class)
+      ) {
         source.append("    ").append(tempName).append(" = new java.math.BigDecimal(").append(sourceTempName).append(");\n");
         return tempCounter;
       }
     }
 
-    if (ps.writeType.equals(int.class) || ps.writeType.equals(Integer.class)) {
+    if (ps.writeType.equals(short.class)) {
+      if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = (short) ").append(sourceTempName).append(";\n");
+        return tempCounter;
+      }
+
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".shortValue();\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(Short.class)) {
+      // It appears that the Javassist compiler does not handle auto-boxing very well. If the destination is
+      // an Integer (not an int), then we need to make sure we assign an Integer!
+      if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = Short.valueOf((short) ").append(sourceTempName).append(");\n");
+        return tempCounter;
+      }
+
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = Short.valueOf(").append(sourceTempName).append(".shortValue());\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(int.class)) {
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = (int) ").append(sourceTempName).append(";\n");
         return tempCounter;
       }
-      
+
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".intValue();\n");
         return tempCounter;
       }
     }
 
+    if (ps.writeType.equals(Integer.class)) {
+      // It appears that the Javassist compiler does not handle auto-boxing very well. If the destination is
+      // an Integer (not an int), then we need to make sure we assign an Integer!
+      if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = Integer.valueOf((int) ").append(sourceTempName).append(");\n");
+        return tempCounter;
+      }
+
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = Integer.valueOf(").append(sourceTempName).append(".intValue());\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(long.class)) {
+      if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = (long) ").append(sourceTempName).append(";\n");
+        return tempCounter;
+      }
+
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".longValue();\n");
+        return tempCounter;
+      }
+    }
+
+    if (ps.writeType.equals(Long.class)) {
+      // It appears that the Javassist compiler does not handle auto-boxing very well. If the destination is
+      // an Integer (not an int), then we need to make sure we assign an Integer!
+      if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
+        source.append("    ").append(tempName).append(" = Long.valueOf((long) ").append(sourceTempName).append(");\n");
+        return tempCounter;
+      }
+
+      if (ps.readType.equals(BigDecimal.class)) {
+        source.append("    ").append(tempName).append(" = Long.valueOf(").append(sourceTempName).append(".longValue());\n");
+        return tempCounter;
+      }
+    }
+
     if (ps.writeType.equals(float.class)) {
-      if (ps.readType.equals(int.class) || ps.readType.equals(double.class)) {
+      if (ps.readType.equals(short.class) ||
+          ps.readType.equals(int.class) ||
+          ps.readType.equals(double.class)
+      ) {
         source.append("    ").append(tempName).append(" = (float) ").append(sourceTempName).append(";\n");
         return tempCounter;
       }
@@ -322,7 +397,11 @@ public class MapperCodeGenerator {
     }
 
     if (ps.writeType.equals(double.class)) {
-      if (ps.readType.equals(int.class) || ps.readType.equals(float.class)) {
+      if (ps.readType.equals(short.class) ||
+          ps.readType.equals(int.class) ||
+          ps.readType.equals(long.class) ||
+          ps.readType.equals(float.class)
+      ) {
         source.append("    ").append(tempName).append(" = (double) ").append(sourceTempName).append(";\n");
         return tempCounter;
       }
