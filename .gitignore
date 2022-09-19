@@ -13,6 +13,8 @@ lib-test/
 lib/
 test-reports/
 test-classes/
+build/
+.gradle/
 
 # Build products
 japper*.jar
