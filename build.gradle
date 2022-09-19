@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+}
+
+group 'org.dt'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation('commons-beanutils:commons-beanutils:1.9.4') {
+        /*
+         * commons-beanutils has a transitive dependency on commons-collections 3.x, which has
+         * a vulnerability which is only fixed in 4.x. BUT, 4.x is deployed under a new name
+         * which means that you can't just force a newer version. However, we don't actually
+         * make use of the collections features in Japper, so we can safely exclude this
+         * depndency for ourselves.
+         */
+        exclude group: 'commons-collections', module: 'commons-collections'
+    }
+    implementation 'commons-logging:commons-logging:1.2'
+    implementation 'org.javassist:javassist:3.29.2-GA'
+
+    compileOnly 'org.apiguardian:apiguardian-api:1.1.2'
+
+    testImplementation 'org.hsqldb:hsqldb:2.3.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.18.0'
+    testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl:2.18.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+java {
+    withSourcesJar()
+}
+
+test {
+    useJUnitPlatform()
+}
