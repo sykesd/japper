@@ -22,9 +22,34 @@ public class CallResult {
   CallResult() {}
   
   public <T> T get(String name, Class<T> resultType) {
+    if (resultType.isPrimitive()) {
+      return magicBox(resultType, valueMap.get(name));
+    }
+
     return resultType.cast(valueMap.get(name));
   }
-  
+
+  @SuppressWarnings("unchecked")
+  private <T> T magicBox(Class<T> resultType, Object value) {
+    if (resultType == short.class) {
+      return (T) new Short(value != null ? (short) value : 0);
+    }
+    if (resultType == int.class) {
+      return (T) new Integer(value != null ? (int) value : 0);
+    }
+    if (resultType == long.class) {
+      return (T) new Long(value != null ? (long) value : 0);
+    }
+    if (resultType == float.class) {
+      return (T) new Float(value != null ? (float) value : 0);
+    }
+    if (resultType == double.class) {
+      return (T) new Double(value != null ? (double) value : 0);
+    }
+
+    throw new IllegalArgumentException("Unsupported primitive type in OUT parameter wrangling: " + resultType.getName() + " from " + (value == null ? "(null)" : value.getClass()));
+  }
+
   void register(CallableStatement cs, String name, Class<?> type, int index) throws SQLException {
     Parameter p = new Parameter(name, type, index);
     
@@ -81,14 +106,37 @@ public class CallResult {
       valueMap.put(p.getName(), cs.getTimestamp(p.getIndex()));
       return;
     }
-    
+
     if (p.getType().equals(Date.class)) {
       valueMap.put(p.getName(), cs.getDate(p.getIndex()));
       return;
     }
-    
-    // TODO add in options for Java types: Integer, Long, Double, Float
-    
+
+    if (p.getType().equals(Short.class) || p.getType().equals(short.class)) {
+      valueMap.put(p.getName(), cs.getShort(p.getIndex()));
+      return;
+    }
+
+    if (p.getType().equals(Integer.class) || p.getType().equals(int.class)) {
+      valueMap.put(p.getName(), cs.getInt(p.getIndex()));
+      return;
+    }
+
+    if (p.getType().equals(Long.class) || p.getType().equals(long.class)) {
+      valueMap.put(p.getName(), cs.getLong(p.getIndex()));
+      return;
+    }
+
+    if (p.getType().equals(Float.class) || p.getType().equals(float.class)) {
+      valueMap.put(p.getName(), cs.getFloat(p.getIndex()));
+      return;
+    }
+
+    if (p.getType().equals(Double.class) || p.getType().equals(double.class)) {
+      valueMap.put(p.getName(), cs.getDouble(p.getIndex()));
+      return;
+    }
+
     throw new IllegalArgumentException("Unsupported OUT parameter type: "+p.getName()+"("+p.getType().getName()+")");
   }
 
@@ -97,20 +145,24 @@ public class CallResult {
       return Types.VARCHAR;
     }
     
-    if (type.equals(BigDecimal.class)) {
+    if (type.equals(BigDecimal.class) ||
+        type.equals(Short.class) || type.equals(short.class) ||
+        type.equals(Integer.class) || type.equals(int.class) ||
+        type.equals(Long.class) || type.equals(long.class) ||
+        type.equals(Float.class) || type.equals(float.class) ||
+        type.equals(Double.class) || type.equals(double.class)
+    ) {
       return Types.NUMERIC;
     }
     
     if (type.equals(Timestamp.class)) {
       return Types.TIMESTAMP;
     }
-    
+
     if (type.equals(Date.class)) {
       return Types.DATE;
     }
-    
-    // TODO add in options for Java types: Integer, Long, Double, Float
-    
+
     throw new IllegalArgumentException("Unsupported OUT parameter type: "+type.getName());
   }
 
