@@ -20,7 +20,7 @@ public class SimpleStoredProcedureTest {
   }
 
   @AfterAll
-  public static void clearDB() throws Exception {
+  public static void clearDB() {
     if (testData != null) testData.destroy();
   }
 
@@ -31,7 +31,7 @@ public class SimpleStoredProcedureTest {
     Connection conn = testData.connect();
 
     CallResult callResult = Japper.call(conn, SQL_CALL, "NAME", "something", "MANGLED", out(String.class), "NAME_RANK", out(BigDecimal.class));
-    assertEquals(new String("something"), callResult.get("MANGLED", String.class));
+    assertEquals("something", callResult.get("MANGLED", String.class));
     assertEquals(new BigDecimal(5), callResult.get("NAME_RANK", BigDecimal.class));
 
     conn.close();
@@ -42,7 +42,7 @@ public class SimpleStoredProcedureTest {
     Connection conn = testData.connect();
 
     CallResult callResult = Japper.call(conn, SQL_CALL, "NAME", "something", "DUMMY", "value", "MANGLED", out(String.class), "NAME_RANK", out(BigDecimal.class));
-    assertEquals(new String("something"), callResult.get("MANGLED", String.class));
+    assertEquals("something", callResult.get("MANGLED", String.class));
     assertEquals(new BigDecimal(5), callResult.get("NAME_RANK", BigDecimal.class));
 
     conn.close();
@@ -53,14 +53,36 @@ public class SimpleStoredProcedureTest {
     Connection conn = testData.connect();
     
     ProcResult result = Japper.call(conn, ProcResult.class, SQL_CALL, "NAME", "something", "MANGLED", out(String.class), "NAME_RANK", out(BigDecimal.class));
-    assertEquals(new String("something"), result.getMangled());
+    assertEquals("something", result.getMangled());
     assertEquals(new BigDecimal(5), result.getNameRank());
     
     // Do it again so we can see the 2nd time performce
     result = Japper.call(conn, ProcResult.class, SQL_CALL, "NAME", "something", "MANGLED", out(String.class), "NAME_RANK", out(BigDecimal.class));
-    assertEquals(new String("something"), result.getMangled());
+    assertEquals("something", result.getMangled());
     assertEquals(new BigDecimal(5), result.getNameRank());
     
+    conn.close();
+  }
+
+  @Test
+  public void callWithPrimitypeTypesTest() throws Exception {
+    Connection conn = testData.connect();
+
+    CallResult callResult = Japper.call(conn, SQL_CALL, "NAME", "something", "DUMMY", "value", "MANGLED", out(String.class), "NAME_RANK", out(Integer.class));
+    assertEquals(5, callResult.get("NAME_RANK", Integer.class));
+
+    // Do the same again with a floating point type
+    callResult = Japper.call(conn, SQL_CALL, "NAME", "something", "DUMMY", "value", "MANGLED", out(String.class), "NAME_RANK", out(Double.class));
+    assertEquals(5.0, callResult.get("NAME_RANK", Double.class));
+
+    // And now with the primitive type by itself
+    callResult = Japper.call(conn, SQL_CALL, "NAME", "something", "DUMMY", "value", "MANGLED", out(String.class), "NAME_RANK", out(double.class));
+    assertEquals(5.0, callResult.get("NAME_RANK", double.class));
+
+    // And one more time to make sure boxing stuff works as expected
+    callResult = Japper.call(conn, SQL_CALL, "NAME", "something", "DUMMY", "value", "MANGLED", out(String.class), "NAME_RANK", out(double.class));
+    assertEquals(5.0, callResult.get("NAME_RANK", Double.class));
+
     conn.close();
   }
 }
