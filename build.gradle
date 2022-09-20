@@ -38,6 +38,7 @@ java {
     }
 
     withSourcesJar()
+    withJavadocJar()
 }
 
 test {

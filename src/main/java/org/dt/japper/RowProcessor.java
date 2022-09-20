@@ -83,6 +83,7 @@ public interface RowProcessor<T> {
    *   If the <code>ResultSet</code> is empty this method will still be called.
    * </p>
    * @param metaData the {@link java.sql.ResultSetMetaData} for the {@link ResultSet}
+   * @throws SQLException if underlying JDBC driver throws
    */
   void prepare(ResultSetMetaData metaData) throws SQLException;
 
@@ -96,6 +97,7 @@ public interface RowProcessor<T> {
    *
    * @param model the model instance we are processing
    * @param rs the {@link ResultSet} containing the current row to process
+   * @throws SQLException if underlying JDBC driver throws
    */
   void process(T model, ResultSet rs) throws SQLException;
 

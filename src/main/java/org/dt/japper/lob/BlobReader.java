@@ -57,6 +57,7 @@ public class BlobReader {
    * @param rs the result set to load the column value from
    * @param columnIndex the column to load the value from
    * @return the BLOB as a byte[]
+   * @throws SQLException if underlying JDBC driver throws
    */
   public static byte[] read(ResultSet rs, int columnIndex) throws SQLException {
     Blob blob = rs.getBlob(columnIndex);
