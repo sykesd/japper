@@ -63,18 +63,23 @@ import org.apiguardian.api.API.Status;
 
 
 /**
- * A minimal ORM tool for working with SQL database over JDBC.
+ * A minimal ORM tool for working with SQL databases over JDBC.
  * <p>
- *   Inspired heavily by the similarly named class in
- *   <a href="https://github.com/DapperLib/Dapper">Dapper .NET</a>.
+ *   Inspired heavily by the
+ *   <a href="https://github.com/DapperLib/Dapper">Dapper .NET</a>
+ *   project.
  * </p>
  * <p>
- * The idea is that the conversion from SQL query to object is "magic".
+ * The idea is that the conversion from SQL query to object is "magic":
  * No configuration, annotations, or anything. It should just work.
  * <p>
  * We assume SQL is far better at doing the data stuff than anything we could
  * come up with, and we just worry about munging a result set into a nice object
  * for us to work with.
+ * <p>
+ * This works by matching the column labels or names from the {@link ResultSet}
+ * against the class field names, in the fashion of JavaBeans. Providing support
+ * for nested objects as well.
  *
  * <h4>Configuration</h4>
  * <p>
@@ -109,7 +114,7 @@ public class Japper {
   /**
    * Helper method to assist in calling {@link #executeBatch(JapperConfig, Connection, String, List)}.
    * <p>
-   * Is shorter and more convenient than having to type {@code Arrays.&lt;Object[]&gt;asList(...)}
+   * Is shorter and more convenient than having to type {@code Arrays.<Object[]>asList(...)}
    * </p>
    *
    * @param paramLists the array of {@code Object[]} parameter lists to put together into a single {@link List}
@@ -146,15 +151,18 @@ public class Japper {
 
 
   /**
-   * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
+   * Execute the given SQL query, mapping the results to instances of <code>resultType</code>, returning the results
    * in a form that they can be streamed.
    * <p>
+   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   * </p>
    *
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
-   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable} or as a {@link java.util.stream.Stream}.
+   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable}
+   *         or as a {@link java.util.stream.Stream}.
    */
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -163,10 +171,11 @@ public class Japper {
 
 
   /**
-   * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
+   * Execute the given SQL query, mapping the results to instances of <code>resultType</code>, returning the results
    * in a form that they can be streamed.
    * <p>
-   *   {@link #DEFAULT_CONFIG} will used for the configuration.
+   *   This is the same as {@link #streamableOf(Connection, Class, String, Object...)}, except that the caller provides
+   *   a {@link JapperConfig} instance in order to control the fetch size.
    * </p>
    *
    * @param config the {@link JapperConfig} to use when executing this query
@@ -174,7 +183,8 @@ public class Japper {
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
-   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable} or as a {@link java.util.stream.Stream}.
+   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable}
+   *         or as a {@link java.util.stream.Stream}.
    */
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -182,17 +192,23 @@ public class Japper {
   }
 
   /**
-   * Execute the given SQL query mapping the results to instances of <code>resultType</code>, returning the results
+   * Execute the given SQL query, mapping the results to instances of <code>resultType</code>, returning the results
    * in a form that they can be streamed.
    * <p>
+   *   This is the same as {@link #streamableOf(Connection, Class, String, Object...)}, except that the caller provides
+   *   a {@link JapperConfig} instance in order to control the fetch size, and a {@link RowProcessor} instance is
+   *   provided to perform additional per-row processing on the result.
+   * </p>
    *
    * @param config the {@link JapperConfig} to use when executing this query
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
-   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing
+   *                     on the result
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
-   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable} or as a {@link java.util.stream.Stream}.
+   * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable}
+   *         or as a {@link java.util.stream.Stream}.
    */
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
@@ -258,14 +274,14 @@ public class Japper {
 
   /**
    * Execute the given SQL query on the given connection, mapping the result to the given
-   * resultType.
+   * {@code resultType}.
    * <p>
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
-   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
@@ -282,7 +298,7 @@ public class Japper {
    * @param config the {@link JapperConfig} to use when executing this query
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
-   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
@@ -399,7 +415,7 @@ public class Japper {
    *
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
-   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
@@ -420,7 +436,7 @@ public class Japper {
    * @param config the {@link JapperConfig} to use when executing this query
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
-   * @param rowProcessor an (optional) {@link org.dt.japper.RowProcessor} to perform additional per-row processing on the result
+   * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
    * @param params the parameters to the query
    * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
