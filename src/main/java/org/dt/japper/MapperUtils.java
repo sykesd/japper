@@ -77,7 +77,8 @@ public class MapperUtils {
    * </p>
    *
    * @param targetType the type we want a new instance of
-   * @return a new instance of targetType
+   * @return a new instance of {@code targetType}
+   * @param <T> the type to create
    */
   public static <T> T create(Class<T> targetType) {
     try {

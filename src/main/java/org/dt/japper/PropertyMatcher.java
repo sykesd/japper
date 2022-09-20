@@ -52,17 +52,13 @@ import org.apache.commons.logging.LogFactory;
  * discuss the rules for matching, some definitions will be required.
  * </p>
  *
- * <h4>Definitions</h4>
+ * <b>Definitions</b>
  *
  * <ul>
  *   <li>{@code TT} - The Target Type we are mapping to.</li>
- * </ul>
- * <ul>
  *   <li>{@code P1..n} - A simple property on a JavaBean. Simple properties are the types that will be
  *                       returned from the columns themselves, e.g. {@link String}, {@link BigDecimal},
  *                       {@link Integer}, {@link Date}, {@link Timestamp}, etc.</li>
- * </ul>
- * <ul>
  *   <li>{@code ST1..n} - A complex property, i.e. a Sub-Type of TTT, or one of its sub-types,
  *                        recursively. A complex type is itself a JavaBean and can have further simple
  *                        properties or even complex properties.</li>
@@ -75,13 +71,9 @@ import org.apache.commons.logging.LogFactory;
  * </pre>
  *
  * <ul>
- *   {@code L} - The column label. In our example it is 'username'.
- * </ul>
- * <ul>
- *   {@code T} - The table name. In our example it is 'user'.
- * </ul>
- * <ul>
- *   {@code C} - The column name. In our example it is 'name'.
+ *   <li>{@code L} - The column label. In our example it is 'username'.</li>
+ *   <li>{@code T} - The table name. In our example it is 'user'.</li>
+ *   <li>{@code C} - The column name. In our example it is 'name'.</li>
  * </ul>
  *
  * The column label/name is converted to lower camel case to match it to a property name, e.g.
@@ -146,7 +138,7 @@ import org.apache.commons.logging.LogFactory;
  * </p>
  * <pre style="code">
  *   PropertyMatcher matcher = new PropertyMatcher(TargetType.class);
- *   for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+ *   for (int i = 1; i &lt;= resultSetMetaData.getColumnCount(); i++) {
  *     PropertyDescriptor[] path = matcher.match(resultSetMetaData.getColumnLabel(i), resultSetMetaData.getTableName(i), resultSetMetaData.getColumnName(i));
  *     ...
  *   }

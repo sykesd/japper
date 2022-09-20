@@ -80,8 +80,8 @@ import org.apiguardian.api.API.Status;
  * This works by matching the column labels or names from the {@link ResultSet}
  * against the class field names, in the fashion of JavaBeans. Providing support
  * for nested objects as well.
- *
- * <h4>Configuration</h4>
+ * <p>
+ * <b>Configuration</b>
  * <p>
  *   When reading BLOB field values, Japper reads the entire BLOB into memory. As such it places
  *   a limit on the maximum size that can be read. The default is 64MB. However, you can configure
@@ -89,7 +89,7 @@ import org.apiguardian.api.API.Status;
  *   the maximum size in megabytes.
  * </p>
  *
- * <h4>Fetch size</h4>
+ * <b>Fetch size</b>
  * <p>
  *   By default, Japper fetches results from the database in sizes of up to 500 records. You can
  *   configure the size for an individual query via a {@link JapperConfig} instance.
@@ -117,6 +117,10 @@ public class Japper {
    * Is shorter and more convenient than having to type {@code Arrays.<Object[]>asList(...)}
    * </p>
    *
+   * <p>
+   *   This is designed to be used in conjunction with {@link #params(Object...)}.
+   * </p>
+   *
    * @param paramLists the array of {@code Object[]} parameter lists to put together into a single {@link List}
    * @return the {@link List} of parameter lists ({@code Object[]})
    */
@@ -132,7 +136,7 @@ public class Japper {
   /**
    * Helper method to assist in calling {@link #executeBatch(JapperConfig, Connection, String, List)}.
    * <p>
-   * Together with {@link #paramLists(Object[]...)} makes it possible to construct the parameter lists
+   * Together with {@link #paramLists(Object[][])} makes it possible to construct the parameter lists
    * in-line. For example:
    * </p>
    * <pre style="code">
@@ -157,12 +161,13 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable}
    *         or as a {@link java.util.stream.Stream}.
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -179,12 +184,13 @@ public class Japper {
    * </p>
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable}
    *         or as a {@link java.util.stream.Stream}.
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -201,14 +207,15 @@ public class Japper {
    * </p>
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing
    *                     on the result
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return a {@link JapperStreamingResult} which allows the caller to treat the results as an {@link Iterable}
    *         or as a {@link java.util.stream.Stream}.
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
@@ -279,12 +286,14 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the {@link List} of {@code resultType} instances containing the results of the query,
+   *         or an empty list of the query returns no results
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> List<T> query(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
@@ -296,12 +305,14 @@ public class Japper {
    * resultType
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the {@link List} of {@code resultType} instances containing the results of the query,
+   *         or an empty list of the query returns no results
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> List<T> query(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
@@ -374,11 +385,13 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the {@link List} of {@code resultType} instances containing the results of the query,
+   *         or an empty list of the query returns no results
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> List<T> query(Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -390,11 +403,13 @@ public class Japper {
    * resultType
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the list of resultType instances containing the results of the query, or an empty list of the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the {@link List} of {@code resultType} instances containing the results of the query,
+   *         or an empty list of the query returns no results
+   * @param <T> the model type the results will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> List<T> query(JapperConfig config, Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -413,12 +428,14 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the first result of the query mapped to a {@code resultType} instance,
+   *         or {@code null} if the query returns no results
+   * @param <T> the model type the result will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> T queryOne(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
@@ -434,12 +451,14 @@ public class Japper {
    * is not issuing a query that returns thousands of rows and then only wants the first one
    * <p>
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param rowProcessor an (optional) {@link RowProcessor} to perform additional per-row processing on the result
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the first result of the query mapped to a {@code resultType} instance,
+   *         or {@code null} if the query returns no results
+   * @param <T> the model type the result will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> T queryOne(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
@@ -464,8 +483,10 @@ public class Japper {
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return the first result of the query mapped to a resultType instances, or null if the query returns no results
+   * @param params the parameters to the query, in name/value pairs
+   * @return the first result of the query mapped to a {@code resultType} instance,
+   *         or {@code null} if the query returns no results
+   * @param <T> the model type the result will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> T queryOne(Connection conn, Class<T> resultType, String sql, Object...params) {
@@ -481,9 +502,9 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return the result set as a {@link QueryResult}
    */
   @API(status = Status.STABLE)
@@ -496,9 +517,9 @@ public class Japper {
    * {@link QueryResult}.
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return the result set as a {@link QueryResult}
    */
   @API(status = Status.STABLE)
@@ -546,9 +567,9 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return the number of rows affected by the given statement
    */
   @API(status = Status.STABLE)
@@ -565,9 +586,9 @@ public class Japper {
    * conversions offered by Japper.
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
+   * @param params the parameters to the query, in name/value pairs
    * @return the number of rows affected by the given statement
    */
   @API(status = Status.STABLE)
@@ -612,9 +633,10 @@ public class Japper {
    *   {@link #DEFAULT_CONFIG} will used for the configuration.
    * </p>
    *
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param paramsList a {@link List} of parameter sets
+   * @param paramsList a {@link List} of parameter sets. Each parameter set is an {@link Object[]}
+   *                   or name/value pairs
    * @return the total number of rows affected by the batch
    */
   @API(status = Status.STABLE)
@@ -635,9 +657,10 @@ public class Japper {
    * called for each set a parameters.
    *
    * @param config the {@link JapperConfig} to use when executing this query
-   * @param conn the connection to execute the query on
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param paramsList a {@link List} of parameter sets
+   * @param paramsList a {@link List} of parameter sets. Each parameter set is an {@link Object[]}
+   *                   or name/value pairs
    * @return the total number of rows affected by the batch
    */
   @API(status = Status.STABLE)
@@ -699,14 +722,16 @@ public class Japper {
    * the result of the call to the given target type.
    * <p>
    * If any of the parameter values are of type {@link OutParameter} then they
-   * will be registered as IN OUT parameters and their values will be mapped
-   * into the target type.
-   * 
-   * @param conn the connection to execute the query on
-   * @param targetType the result to map the query results to
+   * will be registered as {@code IN OUT} parameters and their values will be mapped
+   * into the target type using the same mapping rules as when mapping query
+   * results to model objects.
+   *
+   * @param conn the JDBC {@link Connection} to execute the query on
+   * @param targetType the {@link Class} to map the query results to
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return an instance of target type with any OUT parameters mapped to its properties
+   * @param params the parameters to the query, in name/value pairs
+   * @return an instance of target type with any {@code OUT} parameters mapped to its properties
+   * @param <T> the model type the outputs will be mapped to
    */
   @API(status = Status.STABLE)
   public static <T> T call(Connection conn, Class<T> targetType, String sql, Object...params) {
@@ -749,13 +774,13 @@ public class Japper {
    * the result of the call to a {@link CallResult}.
    * <p>
    * If any of the parameter values are of type {@link OutParameter} then they
-   * will be registered as IN OUT parameters and their return values will be 
-   * available in the returned {@link CallResult}
-   * 
-   * @param conn the connection to execute the query on
+   * will be registered as {@code IN OUT} parameters and their return values will be
+   * available in the returned {@link CallResult}.
+   *
+   * @param conn the JDBC {@link Connection} to execute the query on
    * @param sql the SQL statement to execute
-   * @param params the parameters to the query
-   * @return a {@link CallResult} with any OUT parameter values
+   * @param params the parameters to the query, in name/value pairs
+   * @return a {@link CallResult} with any {@code OUT} parameter values
    */
   @API(status = Status.STABLE)
   public static CallResult call(Connection conn, String sql, Object...params) {
@@ -794,10 +819,23 @@ public class Japper {
   }
   
   /**
-   * Convenience method for creating an {@link OutParameter} inline in a call to {@link Japper#call(Connection, Class, String, Object...) call}.
-   * 
-   * @param type the data type we expect this return value to have
-   * @return the OutParameter instance to pass in the parameters to {@link #call(Connection, Class, String, Object...) call}
+   * Convenience method for creating an {@link OutParameter} inline in a call to
+   * {@link Japper#call(Connection, Class, String, Object...)}.
+   *
+   * <p>
+   *   If, for example, we call a stored procedure that has {@code OUT} parameters
+   *   using a SQL statement like <code>{call do_something(:NAME, :RESULT)}</code>
+   *   where we expect the {@code :RESULT} output parameter to be a numeric type
+   *   then it could be called as follows:
+   * </p>
+   * <pre style="code">
+   *   CallResult result = Japper.call(conn, SQL_CALL, "NAME", "Joe", "RESULT", out(BigDecimal.class));
+   *   BigDecimal value = result.get("RESULT", BigDecimal.class);
+   * </pre>
+   *
+   * @param type the {@link Class} we expect this return value to have
+   * @return the {@link OutParameter} instance to pass in the parameters
+   *         to {@link #call(Connection, Class, String, Object...) call}
    */
   @API(status = Status.STABLE)
   public static OutParameter out(Class<?> type) { return new OutParameter(type); }
@@ -1010,12 +1048,14 @@ public class Japper {
 
   /**
    * Get a Mapper implementation that can be used to map the results of the given SQL query
-   * with the given metadata to the given type
+   * with the given {@link ResultSetMetaData} to the given {@code resultType}.
    * 
-   * @param resultType the type to map to
+   * @param resultType the {@link Class} to map to
    * @param sql the query whose results we are going to map
-   * @param metaData the metadata of the results of the query
-   * @return a Mapper implementation
+   * @param metaData the {@link ResultSetMetaData} of the results of the query
+   * @return a {@link Mapper} implementation
+   * @param <T> the type the returned {@link Mapper} will map results to
+   * @throws SQLException if underlying JDBC driver throws
    */
   public static <T> Mapper<T> getMapper(Class<T> resultType, String sql, ResultSetMetaData metaData) throws SQLException {
     // TODO Once we have a better feel for what the performance overhead of the code generation

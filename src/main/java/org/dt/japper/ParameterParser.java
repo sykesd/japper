@@ -62,14 +62,13 @@ public class ParameterParser {
     /**
      * Is the value a {@link List}-type that requires expansion?
      * <p>
-     *   <tt>List</tt>-type values are ones that:
+     *   {@link List}-type values are ones that are:
      *   <ul>
-     *     <li>an array (but not <tt>byte[]</tt></li>
-     *     <li>are a {@link Collection}</li>
+     *     <li>an array (but not {@code byte[]}</li>
+     *     <li>a {@link Collection}</li>
      *   </ul>
-     * </p>
      *
-     * @return true if the value is a <tt>List</tt>-type
+     * @return true if the value is a {@link List}-type
      */
     public boolean isListTypeValue() {
       if (value == null) {

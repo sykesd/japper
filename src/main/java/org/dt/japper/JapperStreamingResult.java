@@ -65,12 +65,12 @@ import java.util.stream.StreamSupport;
  * <pre style="code">
  *   try (JapperStreamingResult&lt;MyType&gt; result = Japper.streamableOf(conn, MyType.class, SQL_GET_MY_TYPES, "PARAM1", param1)) {
  *     result.stream()
- *        .filter(type -> type.isThisTheDroneWeAreLookingFor())
- *        .forEach(type -> System.out.println("We found drone " + type.getName()))
+ *        .filter(type -&gt; type.isThisTheDroneWeAreLookingFor())
+ *        .forEach(type -&gt; System.out.println("We found drone " + type.getName()))
  *        ;
  *   }
  * </pre>
- * @param <T>
+ * @param <T> the model type the results will be mapped to
  */
 public class JapperStreamingResult<T> implements AutoCloseable, Iterator<T>, Iterable<T> {
 
