@@ -35,8 +35,8 @@ package org.dt.japper;
 
 
 /**
- * Helper class for the SqlBuilder. This holds an individual SQL template
- * It state is altered through the public methods of the SqlBuilder class
+ * Helper class for the SqlBuilder. This holds an individual SQL template.
+ * Its state is altered through the public methods of the {@link SqlBuilder} class.
  * 
  */
 public class Template {

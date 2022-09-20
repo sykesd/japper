@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Marker annotation to tell the mapper to ignore this property.
  * <p>
  *     This should be placed on either the getter or the setter method of the property.
- *     Placing it on either one will tell Japper to ignore this property during matching.
+ *     Placing it on either one will tell {@code Japper} to ignore this property during matching.
  * </p>
  * <p>
  *     The initial use-case for this is to allow for the prevention of infinite loops.

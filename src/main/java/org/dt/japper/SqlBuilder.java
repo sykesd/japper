@@ -87,12 +87,26 @@ public class SqlBuilder {
 
   private final Map<String, Template> templateMap = new HashMap<>();
 
+  /**
+   * Add a new SQL statement template to this builder, identified by {@code id}.
+   *
+   * @param id the unique name within this builder by which this template is identified
+   * @param sqlTemplate the SQL statement template
+   * @return the {@link Template} instance created
+   */
   @API(status = Status.STABLE)
   public Template addTemplate(String id, String sqlTemplate) {
     templateMap.put(id, new Template(sqlTemplate));
     return templateMap.get(id);
   }
 
+  /**
+   * Replace the fragment placeholder {@code id} in every template in this builder by
+   * {@code fragment}.
+   *
+   * @param id the ID of the fragment in the template to replace
+   * @param fragment the {@link String} to replace the fragment placeholder with
+   */
   @API(status = Status.STABLE)
   public void replaceFragment(String id, String fragment) {
     for (Template template : templateMap.values()) {
@@ -100,11 +114,22 @@ public class SqlBuilder {
     }
   }
 
+  /**
+   * Retrieve the SQL statement identified by {@code id} in its current state, i.e. with
+   * the fragment placeholders replaced in previous calls to
+   * {@link #replaceFragment(String, String)}.
+   *
+   * @param id the ID of the SQL template to retrieve
+   * @return the SQL statement with any of the fragment placeholders replaced
+   */
   @API(status = Status.STABLE)
   public String getSql(String id) {
     return templateMap.get(id).getSql();
   }
 
+  /**
+   * Restore all SQL statement templates in this builder back to their original state.
+   */
   @API(status = Status.STABLE)
   public void reset() {
     for (Template template : templateMap.values()) {
