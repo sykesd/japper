@@ -1,6 +1,7 @@
 package org.dt.japper;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -65,7 +66,11 @@ public class DefaultMapper<T> implements Mapper<T> {
   }
   
   @Override
-  public T map(ResultSet rs, RowProcessor<T> rowProcessor) throws SQLException {
+  public T map(
+          JapperConfig config,
+          ResultSet rs,
+          RowProcessor<T> rowProcessor
+  ) throws SQLException {
     T dest = create(resultType);
     
     PropertyMatcher matcher = null;
@@ -76,7 +81,11 @@ public class DefaultMapper<T> implements Mapper<T> {
           matcher = new PropertyMatcher(resultType);
         }
         
-        PropertyDescriptor[] path = matcher.match(metaData.getColumnLabel(i), metaData.getTableName(i), metaData.getColumnName(i));
+        PropertyDescriptor[] path = matcher.match(
+                metaData.getColumnLabel(i),
+                metaData.getTableName(i),
+                metaData.getColumnName(i)
+        );
         if (path != null) {
           cachedPaths.add(path);
         }
@@ -87,7 +96,7 @@ public class DefaultMapper<T> implements Mapper<T> {
       
       PropertyDescriptor[] path = cachedPaths.get(i);
       if (path != EMPTY_PATH) {
-        setProperty(path, dest, rs, i);
+        setProperty(config, path, dest, rs, i);
       }
     }
 
@@ -100,7 +109,7 @@ public class DefaultMapper<T> implements Mapper<T> {
   
 
   
-  private void setProperty(PropertyDescriptor[] path, Object dest, ResultSet rs, int columnIndex) {
+  private void setProperty(JapperConfig config, PropertyDescriptor[] path, Object dest, ResultSet rs, int columnIndex) {
     try {
       for (int i = 0; i < path.length-1; i++) {
         Object value = PropertyUtils.getProperty(dest, path[i].getName());
@@ -111,7 +120,7 @@ public class DefaultMapper<T> implements Mapper<T> {
         dest = value;
       }
       
-      setProperty(dest, path[path.length-1], rs, columnIndex);
+      setProperty(config, dest, path[path.length-1], rs, columnIndex);
     }
     catch (Exception ex) {
       String columnName = null;
@@ -130,7 +139,13 @@ public class DefaultMapper<T> implements Mapper<T> {
     return ref.toString();
   }
   
-  private void setProperty(Object dest, PropertyDescriptor writeDescriptor, ResultSet rs, int columnIndex) {
+  private void setProperty(
+          JapperConfig config,
+          Object dest,
+          PropertyDescriptor writeDescriptor,
+          ResultSet rs,
+          int columnIndex
+  ) {
     try {
       String propertyName = writeDescriptor.getName();
       int sqlType = metaData.getColumnType(columnIndex);
@@ -161,7 +176,12 @@ public class DefaultMapper<T> implements Mapper<T> {
           break;
           
         case Types.BLOB:
-          setProperty(dest, propertyName, writeDescriptor.getPropertyType(), BlobReader.read(rs, columnIndex));
+          setProperty(
+                  dest,
+                  propertyName,
+                  writeDescriptor.getPropertyType(),
+                  BlobReader.read(config, rs, columnIndex)
+          );
           break;
           
       }
@@ -291,10 +311,10 @@ public class DefaultMapper<T> implements Mapper<T> {
   
   private static <T> T create(Class<T> targetType) {
     try {
-      return targetType.newInstance();
+      return targetType.getDeclaredConstructor().newInstance();
     }
-    catch (InstantiationException | IllegalAccessException iEx) {
-      throw new IllegalArgumentException("Type "+targetType.getName()+" does not have a default constructor!", iEx);
+    catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException iEx) {
+      throw new IllegalArgumentException("Type " + targetType.getName() + " does not have a default constructor!", iEx);
     }
   }
 

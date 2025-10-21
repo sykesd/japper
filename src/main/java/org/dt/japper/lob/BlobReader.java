@@ -8,9 +8,10 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dt.japper.JapperConfig;
 
 /*
- * Copyright (c) 2013-2022, David Sykes and Tomasz Orzechowski
+ * Copyright (c) 2013-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -53,13 +54,19 @@ public class BlobReader {
    * Read the value of columnIndex column from the current row of result set rs as a BLOB value
    * If the value is null or of zero length, return null
    * Otherwise return the value as a byte array
-   * 
+   *
+   * @param config the {@link JapperConfig} from which we read the maximum
+   *               LOB length we allow
    * @param rs the result set to load the column value from
    * @param columnIndex the column to load the value from
    * @return the BLOB as a byte[]
    * @throws SQLException if underlying JDBC driver throws
    */
-  public static byte[] read(ResultSet rs, int columnIndex) throws SQLException {
+  public static byte[] read(
+          JapperConfig config,
+          ResultSet rs,
+          int columnIndex
+  ) throws SQLException {
     Blob blob = rs.getBlob(columnIndex);
     if (blob == null) {
       return null;
@@ -69,15 +76,20 @@ public class BlobReader {
     if (length == 0L) {
       return null;
     }
-    
-    if (length > MAX_BLOB_LENGTH) {
-      throw new IllegalArgumentException("Attempt to read a BLOB column whose value is > "+MAX_BLOB_LENGTH+" bytes. Japper cannot read such BLOB values");
+
+    long queryMaxBlobLength = queryMaxBlobSize(config);
+    if (length > queryMaxBlobLength) {
+      throw new IllegalArgumentException("Attempt to read a BLOB column whose value is > " + queryMaxBlobLength + " bytes. Japper cannot read such BLOB values");
     }
     
     return blob.getBytes(1L, (int) length);
   }
 
-  private static final long DEFAULT_MAX_BLOB_LENGTH = 64 * 1024 * 1024L;   // 64MB - max BLOB size we support loading at once
+  private static long queryMaxBlobSize(JapperConfig config) {
+    return config.getMaxBlobLength() > 0 ? config.getMaxBlobLength() : MAX_BLOB_LENGTH;
+  }
+
+  public static final long DEFAULT_MAX_BLOB_LENGTH = 64 * 1024 * 1024L;   // 64MB - max BLOB size we support loading at once
 
   private static final Pattern REGEX_MAX_LENGTH = Pattern.compile("([0-9]+)([mM])?");
 

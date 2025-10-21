@@ -73,6 +73,7 @@ import java.util.stream.StreamSupport;
  * @param <T> the model type the results will be mapped to
  */
 public class JapperStreamingResult<T> implements AutoCloseable, Iterator<T>, Iterable<T> {
+  private final JapperConfig config;
 
   /**
    * The SQL {@link PreparedStatement} from which we originally got our result set
@@ -108,7 +109,15 @@ public class JapperStreamingResult<T> implements AutoCloseable, Iterator<T>, Ite
   private boolean nextKnown;
   private T nextResult;
 
-  JapperStreamingResult(PreparedStatement ps, ResultSet resultSet, Mapper<T> mapper, RowProcessor<T> rowProcessor, Japper.Profile profile) {
+  JapperStreamingResult(
+          JapperConfig config,
+          PreparedStatement ps,
+          ResultSet resultSet,
+          Mapper<T> mapper,
+          RowProcessor<T> rowProcessor,
+          Japper.Profile profile
+  ) {
+    this.config = config;
     this.ps = ps;
     this.resultSet = resultSet;
     this.mapper = mapper;
@@ -175,7 +184,7 @@ public class JapperStreamingResult<T> implements AutoCloseable, Iterator<T>, Ite
 
     if (resultSet.next()) {
       profile.startMapRow();
-      nextResult = mapper.map(resultSet, rowProcessor);
+      nextResult = mapper.map(config, resultSet, rowProcessor);
       profile.stopMapRow();
     }
     else {

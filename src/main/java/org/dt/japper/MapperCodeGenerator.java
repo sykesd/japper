@@ -73,15 +73,13 @@ public class MapperCodeGenerator {
 
     String methodBody = buildMapMethodBody(resultType, metaData);
     
-    String source = new StringBuilder()
-        .append("  public Object map(java.sql.ResultSet rs, org.dt.japper.RowProcessor rowProcessor) {\n")
-        .append(methodBody)
-        .append("    if (rowProcessor != null) {\n")
-        .append("      rowProcessor.process(dest, rs);\n")
-        .append("    }\n")
-        .append("    return dest;\n")
-        .append("  }")
-        .toString();
+    String source = "  public Object map(org.dt.japper.JapperConfig config, java.sql.ResultSet rs, org.dt.japper.RowProcessor rowProcessor) {\n" +
+                    methodBody +
+                    "    if (rowProcessor != null) {\n" +
+                    "      rowProcessor.process(dest, rs);\n" +
+                    "    }\n" +
+                    "    return dest;\n" +
+                    "  }";
     
     try {
       if (log.isTraceEnabled()) {
@@ -91,7 +89,7 @@ public class MapperCodeGenerator {
       CtMethod mapImpl = CtNewMethod.make(source, impl);
       impl.addMethod(mapImpl);
       
-      return (Mapper<T>) impl.toClass().newInstance();
+      return (Mapper<T>) impl.toClass().getDeclaredConstructor().newInstance();
     }
     catch (Exception ex) {
       throw new IllegalStateException("Could not create instance of generated mapper!", ex);
@@ -221,7 +219,7 @@ public class MapperCodeGenerator {
     PropertySetter ps = new PropertySetter(columnIndex, metaData, path, buildReference(path, graphGuardMap));
     
     if (ps.isBlob()) {
-      source.append("    ").append(ps.reference).append('.').append(ps.writerMethod).append("( ").append(ps.readerMethod).append("(").append("rs, ").append(columnIndex).append(") );\n");
+      source.append("    ").append(ps.reference).append('.').append(ps.writerMethod).append("( ").append(ps.readerMethod).append("(config, ").append("rs, ").append(columnIndex).append(") );\n");
     }
     else if (!ps.isNullable() && !ps.isNeedsConversion()) {
       source.append("    ").append(ps.reference).append('.').append(ps.writerMethod).append("( rs.").append(ps.readerMethod).append("(").append(columnIndex).append(") );\n");
@@ -241,7 +239,7 @@ public class MapperCodeGenerator {
         String sourceTempName = tempName;
         tempName = "c"+sourceTempName;
         source.append("    ").append(ps.writeType.getName()).append(" ").append(tempName).append(";\n");
-        tempCounter = buildConversion(source, ps, tempName, sourceTempName, tempCounter);
+        buildConversion(source, ps, tempName, sourceTempName);
       }
       
       // actually set the property value
@@ -271,24 +269,24 @@ public class MapperCodeGenerator {
     return "null";
   }
   
-  private static int buildConversion(StringBuilder source, PropertySetter ps, String tempName, String sourceTempName, int tempCounter) {
+  private static void buildConversion(StringBuilder source, PropertySetter ps, String tempName, String sourceTempName) {
     if (ps.writeType.equals(String.class) && ps.readType.equals(String.class)) {
       /*
        * No actual type conversion, but end up here if the read column is CHAR type 
        * So we need to strip trailing space
        */
       source.append("    ").append(tempName).append(" = org.dt.japper.MapperUtils.trimRight(").append(sourceTempName).append(");\n");
-      return tempCounter;
+      return;
     }
     
     if (ps.writeType.equals(java.sql.Timestamp.class) && ps.readType.equals(java.sql.Date.class) ) {
       source.append("    ").append(tempName).append(" = new java.sql.Timestamp(").append(sourceTempName).append(".getTime());\n");
-      return tempCounter;
+      return;
     }
 
     if ( (ps.writeType.equals(long.class) || ps.writeType.equals(Long.class)) && (ps.readType.equals(java.sql.Timestamp.class) || ps.readType.equals(java.sql.Date.class)) ) {
       source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".getTime();\n");
-      return tempCounter;
+      return;
     }
 
     if (ps.writeType.equals(BigDecimal.class)) {
@@ -299,19 +297,19 @@ public class MapperCodeGenerator {
           ps.readType.equals(double.class)
       ) {
         source.append("    ").append(tempName).append(" = new java.math.BigDecimal(").append(sourceTempName).append(");\n");
-        return tempCounter;
+        return;
       }
     }
 
     if (ps.writeType.equals(short.class)) {
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = (short) ").append(sourceTempName).append(";\n");
-        return tempCounter;
+        return;
       }
 
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".shortValue();\n");
-        return tempCounter;
+        return;
       }
     }
 
@@ -320,24 +318,24 @@ public class MapperCodeGenerator {
       // an Integer (not an int), then we need to make sure we assign an Integer!
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = Short.valueOf((short) ").append(sourceTempName).append(");\n");
-        return tempCounter;
+        return;
       }
 
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = Short.valueOf(").append(sourceTempName).append(".shortValue());\n");
-        return tempCounter;
+        return;
       }
     }
 
     if (ps.writeType.equals(int.class)) {
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = (int) ").append(sourceTempName).append(";\n");
-        return tempCounter;
+        return;
       }
 
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".intValue();\n");
-        return tempCounter;
+        return;
       }
     }
 
@@ -346,24 +344,24 @@ public class MapperCodeGenerator {
       // an Integer (not an int), then we need to make sure we assign an Integer!
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = Integer.valueOf((int) ").append(sourceTempName).append(");\n");
-        return tempCounter;
+        return;
       }
 
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = Integer.valueOf(").append(sourceTempName).append(".intValue());\n");
-        return tempCounter;
+        return;
       }
     }
 
     if (ps.writeType.equals(long.class)) {
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = (long) ").append(sourceTempName).append(";\n");
-        return tempCounter;
+        return;
       }
 
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".longValue();\n");
-        return tempCounter;
+        return;
       }
     }
 
@@ -372,12 +370,12 @@ public class MapperCodeGenerator {
       // an Integer (not an int), then we need to make sure we assign an Integer!
       if (ps.readType.equals(float.class) || ps.readType.equals(double.class)) {
         source.append("    ").append(tempName).append(" = Long.valueOf((long) ").append(sourceTempName).append(");\n");
-        return tempCounter;
+        return;
       }
 
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = Long.valueOf(").append(sourceTempName).append(".longValue());\n");
-        return tempCounter;
+        return;
       }
     }
 
@@ -387,12 +385,12 @@ public class MapperCodeGenerator {
           ps.readType.equals(double.class)
       ) {
         source.append("    ").append(tempName).append(" = (float) ").append(sourceTempName).append(";\n");
-        return tempCounter;
+        return;
       }
       
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".floatValue();\n");
-        return tempCounter;
+        return;
       }
     }
 
@@ -403,12 +401,12 @@ public class MapperCodeGenerator {
           ps.readType.equals(float.class)
       ) {
         source.append("    ").append(tempName).append(" = (double) ").append(sourceTempName).append(";\n");
-        return tempCounter;
+        return;
       }
       
       if (ps.readType.equals(BigDecimal.class)) {
         source.append("    ").append(tempName).append(" = ").append(sourceTempName).append(".doubleValue();\n");
-        return tempCounter;
+        return;
       }
     }
     
