@@ -39,5 +39,5 @@ import java.sql.SQLException;
 
 
 public interface Mapper<T> {
-  T map(ResultSet rs, RowProcessor<T> rowProcessor) throws SQLException;
+  T map(JapperConfig config, ResultSet rs, RowProcessor<T> rowProcessor) throws SQLException;
 }

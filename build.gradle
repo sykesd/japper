@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 group 'org.dt'
@@ -16,7 +16,7 @@ dependencies {
          * a vulnerability which is only fixed in 4.x. BUT, 4.x is deployed under a new name
          * which means that you can't just force a newer version. However, we don't actually
          * make use of the collections features in Japper, so we can safely exclude this
-         * depndency for ourselves.
+         * dependency for ourselves.
          */
         exclude group: 'commons-collections', module: 'commons-collections'
     }
@@ -25,7 +25,7 @@ dependencies {
 
     compileOnly 'org.apiguardian:apiguardian-api:1.1.2'
 
-    testImplementation 'org.hsqldb:hsqldb:2.3.3'
+    testImplementation 'org.hsqldb:hsqldb:2.7.4'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.18.0'
     testRuntimeOnly 'org.apache.logging.log4j:log4j-jcl:2.18.0'
@@ -34,7 +34,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 
     withSourcesJar()

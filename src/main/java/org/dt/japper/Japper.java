@@ -217,6 +217,7 @@ public class Japper {
    *         or as a {@link java.util.stream.Stream}.
    * @param <T> the model type the results will be mapped to
    */
+  @SuppressWarnings("ThrowFromFinallyBlock")
   @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     Profile profile = new Profile(resultType, sql);
@@ -242,7 +243,7 @@ public class Japper {
       profile.stopMapperCreation();
 
       needsCleanup = false;
-      return new JapperStreamingResult<>(ps, rs, mapper, rowProcessor, profile);
+      return new JapperStreamingResult<>(config, ps, rs, mapper, rowProcessor, profile);
     }
     catch (SQLException sqlEx) {
       try {
@@ -314,6 +315,7 @@ public class Japper {
    *         or an empty list of the query returns no results
    * @param <T> the model type the results will be mapped to
    */
+  @SuppressWarnings("ThrowFromFinallyBlock")
   @API(status = Status.STABLE)
   public static <T> List<T> query(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     Profile profile = new Profile(resultType, sql);
@@ -337,7 +339,7 @@ public class Japper {
 
       while (rs.next()) {
         profile.startMapRow();
-        result.add(mapper.map(rs, rowProcessor));
+        result.add(mapper.map(config, rs, rowProcessor));
         profile.stopMapRow();
       }
       profile.stopMap();
@@ -421,12 +423,13 @@ public class Japper {
    * Execute the given SQL query on the given connection, mapping the result to the given
    * resultType. Return only the first result returned.
    * <p>
-   * NOTE: at present this implementation of this is very naive. It simply calls query()
-   * and then returns the first element of the returned list. It is assumed the caller
-   * is not issuing a query that returns thousands of rows and then only wants the first one
+   * NOTE: at present this implementation of this is very naive. It simply
+   * calls {@link #query(Connection, Class, RowProcessor, String, Object...)}
+   * and then returns the first element of the returned list. It is assumed
+   * the caller is not issuing a query that returns thousands of rows and then
+   * only wants the first one
    * <p>
-   *   {@link #DEFAULT_CONFIG} will used for the configuration.
-   * </p>
+   * {@link #DEFAULT_CONFIG} will used for the configuration.
    *
    * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
@@ -446,10 +449,12 @@ public class Japper {
    * Execute the given SQL query on the given connection, mapping the result to the given
    * resultType. Return only the first result returned.
    * <p>
-   * NOTE: at present this implementation of this is very naive. It simply calls query()
-   * and then returns the first element of the returned list. It is assumed the caller
-   * is not issuing a query that returns thousands of rows and then only wants the first one
-   * <p>
+   * NOTE: at present this implementation of this is very naive. It simply
+   * calls {@link #query(Connection, Class, RowProcessor, String, Object...)}
+   * and then returns the first element of the returned list. It is assumed
+   * the caller is not issuing a query that returns thousands of rows and then
+   * only wants the first one
+   *
    * @param config the {@link JapperConfig} to use when executing this query
    * @param conn the JDBC {@link Connection} to execute the query on
    * @param resultType the {@link Class} to map the query results to
@@ -461,9 +466,50 @@ public class Japper {
    * @param <T> the model type the result will be mapped to
    */
   @API(status = Status.STABLE)
-  public static <T> T queryOne(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
-    List<T> results = query(conn, resultType, rowProcessor, sql, params);
-    if (results.size() > 0) {
+  public static <T> T queryOne(
+          JapperConfig config,
+          Connection conn,
+          Class<T> resultType,
+          RowProcessor<T> rowProcessor,
+          String sql,
+          Object...params
+  ) {
+    List<T> results = query(config, conn, resultType, rowProcessor, sql, params);
+    if (!results.isEmpty()) {
+      return results.get(0);
+    }
+    return null;
+  }
+
+  /**
+   * Execute the given SQL query on the given connection, mapping the result to the given
+   * {@code resultType}. Return only the first result returned.
+   * <p>
+   * NOTE: at present this implementation of this is very naive. It simply
+   * calls {@link #query(Connection, Class, RowProcessor, String, Object...)}
+   * and then returns the first element of the returned list. It is assumed
+   * the caller is not issuing a query that returns thousands of rows and then
+   * only wants the first one
+   *
+   * @param config the {@link JapperConfig} to use when executing this query
+   * @param conn the JDBC {@link Connection} to execute the query on
+   * @param resultType the {@link Class} to map the query results to
+   * @param sql the SQL statement to execute
+   * @param params the parameters to the query, in name/value pairs
+   * @return the first result of the query mapped to a {@code resultType} instance,
+   *         or {@code null} if the query returns no results
+   * @param <T> the model type the result will be mapped to
+   */
+  @API(status = Status.STABLE)
+  public static <T> T queryOne(
+          JapperConfig config,
+          Connection conn,
+          Class<T> resultType,
+          String sql,
+          Object...params
+  ) {
+    List<T> results = query(config, conn, resultType, null, sql, params);
+    if (!results.isEmpty()) {
       return results.get(0);
     }
     return null;
@@ -473,12 +519,13 @@ public class Japper {
    * Execute the given SQL query on the given connection, mapping the result to the given
    * resultType. Return only the first result returned.
    * <p>
-   * NOTE: at present this implementation of this is very naive. It simply calls query()
-   * and then returns the first element of the returned list. It is assumed the caller
-   * is not issuing a query that returns thousands of rows and then only wants the first one
+   * NOTE: at present this implementation of this is very naive. It simply
+   * calls {@link #query(Connection, Class, RowProcessor, String, Object...)}
+   * and then returns the first element of the returned list. It is assumed
+   * the caller is not issuing a query that returns thousands of rows and then
+   * only wants the first one
    * <p>
-   *   {@link #DEFAULT_CONFIG} will used for the configuration.
-   * </p>
+   * {@link #DEFAULT_CONFIG} will used for the configuration.
    *
    * @param conn the connection to execute the query on
    * @param resultType the {@link Class} to map the query results to
@@ -851,12 +898,11 @@ public class Japper {
       Properties p = new Properties();
       InputStream in = Japper.class.getResourceAsStream("version.properties");
       if (in != null) {
-        try {
+        try (in) {
           p.load(in);
           version = p.getProperty("version");
         }
-        finally {
-          try { in.close(); } catch (IOException ignored) {}
+        catch (IOException ignored) {
         }
       }
     }
@@ -884,9 +930,8 @@ public class Japper {
       for (ParameterParser.ParameterValue paramValue : parser.getParameterValues()) {
         profile.setParam(paramValue.getName(), paramValue.getValue(), paramValue.getFirstIndex());
 
-        if (paramValue.getValue() instanceof OutParameter) {
+        if (paramValue.getValue() instanceof OutParameter outP) {
           if (paramValue.getStartIndexes().size() != 1) throw new IllegalArgumentException("OUT parameter "+paramValue.getName()+" referenced multiple times!");
-          OutParameter outP = (OutParameter) paramValue.getValue();
           callResult.register(cs, paramValue.getName(), outP.getType(), paramValue.getStartIndexes().get(0));
         }
         else {
@@ -980,8 +1025,7 @@ public class Japper {
      * The value is a Collection or an array. Iterate over the values and set them at their appropriate index
      */
     Object rawValue = paramValue.getValue();
-    if (rawValue instanceof Collection) {
-      Collection<?> bag = (Collection<?>) rawValue;
+    if (rawValue instanceof Collection<?> bag) {
       for (int startIndex : indexes) {
         int subIndex = 0;
         for (Object v : bag) {
@@ -1030,9 +1074,8 @@ public class Japper {
     else if (value instanceof Float) {
       ps.setFloat(index, (Float) value);
     }
-    else if (value instanceof Calendar) {
-      Calendar cal = (Calendar) value;
-      Timestamp timestamp = new Timestamp(cal.getTimeInMillis()); 
+    else if (value instanceof Calendar cal) {
+      Timestamp timestamp = new Timestamp(cal.getTimeInMillis());
       ps.setTimestamp(index, timestamp, cal);
     }
     else if (value instanceof Timestamp) {
@@ -1063,7 +1106,7 @@ public class Japper {
     // the same query, we can add some decision code in here to decide when to use the default,
     // reflective Mapper implementation, and when to generate a specific one dynamically.
 
-    // For now we leave it up to the caller. Code generation is on by default, and can be disabled
+    // For now, we leave it up to the caller. Code generation is on by default, and can be disabled
     // via a specific comment inside the SQL query
     
     if (isUseGeneratedMapper(sql)) {
@@ -1305,14 +1348,14 @@ public class Japper {
       }
 
       if (duration > MILLI_THRESHOLD) {
-        return Long.toString(duration / 1000000L)+"ms";
+        return (duration / 1_000_000L) + "ms";
       }
       
       if (duration > MICRO_THRESHOLD) {
-        return Long.toString(duration / 1000L)+"us";
+        return (duration / 1_000L)+"us";
       }
       
-      return Long.toString(duration) + "ns";
+      return duration + "ns";
     }
     
     private double avgPerRow() {

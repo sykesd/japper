@@ -35,6 +35,7 @@ package org.dt.japper;
 
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.dt.japper.lob.BlobReader;
 
 /**
  * Configuration object for Japper queries.
@@ -45,11 +46,73 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.STABLE)
 public class JapperConfig {
-  private int fetchSize = 500;    // Default JDBC fetch size
+  public static final int DEFAULT_FETCH_SIZE = 500;
+
+  /**
+   * Convenience factory method which creates a {@link JapperConfig} instance
+   * with the given value for the JDBC fetch size (see {@link #fetchSize},
+   * and the default value for {@link #maxBlobLength}.
+   *
+   * @param aSize the JDBC fetch size to use for this query
+   * @return the new {@link JapperConfig} instance configured with the given
+   *         fetch size
+   */
+  @API(status = Status.STABLE)
+  public static JapperConfig fetchSize(int aSize) {
+    return new JapperConfig(aSize);
+  }
+
+  /**
+   * Convenience factory method which creates a {@link JapperConfig} instance
+   * with the given value for the {@link #maxBlobLength}, and the default
+   * value for {@link #fetchSize}.
+   *
+   * @param aLength the maximum length of BLOB to allow to be loaded by this
+   *                query
+   * @return the new {@link JapperConfig} instance configured with the given
+   *         max BLOB length
+   */
+  public static JapperConfig maxBlob(long aLength) {
+    return new JapperConfig(DEFAULT_FETCH_SIZE, aLength);
+  }
+
+  /**
+   * The JDBC fetch size to use for this query.
+   * <p>
+   * Defaults to {@value DEFAULT_FETCH_SIZE}.
+   */
+  private int fetchSize = DEFAULT_FETCH_SIZE;
+
+  /**
+   * The maximum length of a BLOB field that we will read.
+   * <p>
+   * When reading BLOB fields through {@link Mapper}s, included generated ones,
+   * the BLOB data is read fully into memory into a {@code byte[]}. To avoid
+   * memory exhaustion, or at least reduce the risk of it, there is a limit to
+   * the maximum size that will be read.
+   * <p>
+   * This defaults to {@code 0}, in which case the Java system property
+   * {@code japper.blob.limit} is parsed. If that cannot be read, or is not
+   * set, the default {@value BlobReader#DEFAULT_MAX_BLOB_LENGTH} is used. If
+   * this property is set to anything {@code >0}, then this is the maximum to
+   * be read, regardless of any value set via {@code japper.blob.limit}.
+   * <p>
+   * The value set via the Java system property {@code japper.blob.limit} can
+   * only be set in increments of 1 megabyte (1024 * 1024). The value of the
+   * property must be a positive integer followed by {@code m} or {@code M}.
+   * For example, {@code -Djapper.blob.limit=32m} or
+   * {@code -Djapper.blob.limit=27M}.
+   */
+  private long maxBlobLength;
 
   @API(status = Status.STABLE)
   public JapperConfig(int fetchSize) {
     setFetchSize(fetchSize);
+  }
+
+  public JapperConfig(int fetchSize, long maxBlobLength) {
+    setFetchSize(fetchSize);
+    setMaxBlobLength(maxBlobLength);
   }
 
   public JapperConfig() {
@@ -62,5 +125,13 @@ public class JapperConfig {
 
   public int getFetchSize() {
     return fetchSize;
+  }
+
+  public long getMaxBlobLength() {
+    return maxBlobLength;
+  }
+
+  public void setMaxBlobLength(long maxBlobLength) {
+    this.maxBlobLength = maxBlobLength;
   }
 }
