@@ -1,5 +1,5 @@
 /**
- * <h1>Japper - A lightweight object-relational mapping tool.</h1>
+ * Japper - A lightweight object-relational mapping tool.
  *
  * <p>
  *   Inspired heavily by the
@@ -30,9 +30,9 @@
  *     private String id;
  *     private String description;
  *     private BigDecimal qtyOnHand;
- *
+ *     //
  *     public Product() {} // default constructor is required!
- *
+ *     //
  *     // ... all the standard JavaBean getters and setters elided
  *   }
  * </pre>

@@ -14,7 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /*
- * Copyright (c) 2012-2013, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -152,12 +152,30 @@ public class PropertyMatcher {
   private static final Log log = LogFactory.getLog(PropertyMatcher.class);
   
   private List<Property> properties;
-  
+
+  /**
+   * Create a {@link PropertyMatcher} instance for matching column names to
+   * properties (fields) of the Java {@code type}.
+   *
+   * @param type the {@link Class} representing the Java type we are mapping
+   *             to
+   */
   public PropertyMatcher(Class<?> type) {
     buildPropertyList(type);
     dumpPropertyList();
   }
-  
+
+  /**
+   * Find the path through the object graph starting at the type given in
+   * the constructor call that matches the given table and column name and/or
+   * its column label.
+   *
+   * @param columnLabel the column label if any
+   * @param tableName the underlying table name, if known
+   * @param columnName the column name of the result
+   * @return the path to matched property, or {@code null} if none can be
+   *         found
+   */
   public PropertyDescriptor[] match(String columnLabel, String tableName, String columnName) {
     PropertyDescriptor[] path;
     
@@ -200,9 +218,7 @@ public class PropertyMatcher {
       if (columnName != null && !columnName.equalsIgnoreCase(columnLabel)) {
         // Table.Column Sub-Type Direct Property Rule
         path = matchTableLabelSubTypeDirectPropertyRule(tableName+"_"+columnName);
-        if (path != null) {
-          return path;
-        }
+        return path;
       }
     }
     
@@ -357,7 +373,7 @@ public class PropertyMatcher {
          * So we need to skip over any lower case letters in the property name up until
          * the next object graph reference ('.') or the next upper case letter (word break) 
          */
-        while (pnIndex < propertyName.length() && pch != '.' && !Character.isUpperCase(pch)) {
+        while (pch != '.' && !Character.isUpperCase(pch)) {
           pnIndex++;
           
           if (pnIndex >= propertyName.length()) {
@@ -467,7 +483,7 @@ public class PropertyMatcher {
        * So we need to skip over any lower case letters in the property name up until
        * the next object graph reference ('.') or the next upper case letter (word break) 
        */
-      while (pnIndex < propertyName.length() && pch != '.' && !Character.isUpperCase(pch)) {
+      while (pch != '.' && !Character.isUpperCase(pch)) {
         pnIndex++;
         
         if (pnIndex >= propertyName.length()) {
@@ -572,11 +588,7 @@ public class PropertyMatcher {
     }
 
     Method writeMethod = descriptor.getWriteMethod();
-    if (isIgnored(writeMethod)) {
-      return true;
-    }
-
-    return false;
+    return isIgnored(writeMethod);
   }
 
   private boolean isIgnored(Method method) {

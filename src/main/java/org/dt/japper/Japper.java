@@ -29,7 +29,7 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 /*
- * Copyright (c) 2012-2022, David Sykes and Tomasz Orzechowski
+ * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -103,8 +103,12 @@ public class Japper {
   
   private static final Log log = LogFactory.getLog(Japper.class);
 
+  /**
+   * The default {@link JapperConfig} instance used when calling methods which
+   * execute queries or statements and don't take a {@link JapperConfig}
+   * instance.
+   */
   public static final JapperConfig DEFAULT_CONFIG = new JapperConfig();
-
 
   /**
    * Constant to indicate that no parameters are included/needed
@@ -890,6 +894,12 @@ public class Japper {
   
   private static String version = null;
 
+  /**
+   * Get this version of Japper as a {@link String}. It will be something
+   * like {@code "1.0"}, or {@code "1.0-SNAPSHOT-20250706"}.
+   *
+   * @return the version of the Japper library, as a {@link String}
+   */
   @API(status = Status.STABLE)
   public static String getVersion() {
     if (version != null) return version;
@@ -932,7 +942,7 @@ public class Japper {
 
         if (paramValue.getValue() instanceof OutParameter outP) {
           if (paramValue.getStartIndexes().size() != 1) throw new IllegalArgumentException("OUT parameter "+paramValue.getName()+" referenced multiple times!");
-          callResult.register(cs, paramValue.getName(), outP.getType(), paramValue.getStartIndexes().get(0));
+          callResult.register(cs, paramValue.getName(), outP.type(), paramValue.getStartIndexes().get(0));
         }
         else {
           setParameter(cs, paramValue);
@@ -1100,14 +1110,21 @@ public class Japper {
    * @param <T> the type the returned {@link Mapper} will map results to
    * @throws SQLException if underlying JDBC driver throws
    */
-  public static <T> Mapper<T> getMapper(Class<T> resultType, String sql, ResultSetMetaData metaData) throws SQLException {
-    // TODO Once we have a better feel for what the performance overhead of the code generation
-    // is, and whether it provides a benefit for large result sets and/or multiple invocations of 
-    // the same query, we can add some decision code in here to decide when to use the default,
-    // reflective Mapper implementation, and when to generate a specific one dynamically.
-
-    // For now, we leave it up to the caller. Code generation is on by default, and can be disabled
-    // via a specific comment inside the SQL query
+  public static <T> Mapper<T> getMapper(
+          Class<T> resultType,
+          String sql,
+          ResultSetMetaData metaData
+  ) throws SQLException {
+    // TODO Once we have a better feel for what the performance overhead of the
+    //      code generation is, and whether it provides a benefit for large
+    //      result sets and/or multiple invocations of the same query, we can
+    //      add some decision code in here to decide when to use the default,
+    //      reflective Mapper implementation, and when to generate a specific
+    //      one dynamically.
+    //
+    // TODO For now, we leave it up to the caller. Code generation is on by
+    //      default, and can be disabled via a specific comment inside the SQL
+    //      query.
     
     if (isUseGeneratedMapper(sql)) {
       return GeneratedMapper.get(resultType, sql, metaData);

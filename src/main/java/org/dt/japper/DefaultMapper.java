@@ -48,7 +48,23 @@ import org.dt.japper.lob.BlobReader;
  * 
  */
 
-
+/**
+ * The default implementation of {@link Mapper} that is used if code generation
+ * is disabled, by adding the comment {@code /*-codeGen*@/} anywhere in the
+ * query.
+ * <p>
+ * It performs exactly the same work as a code-generated {@link Mapper}
+ * implementation, except it does all the reflection work necessary to map
+ * the values from the {@link ResultSet} to the result type {@link T}
+ * every time the query is executed.
+ * <p>
+ * This might perform better for complex result types that are only used once,
+ * or only a very small number of times. In practice, the cost of
+ * code-generation and compilation at runtime appears to be negligible that
+ * you can ignore this class.
+ *
+ * @param <T> the type to map {@link ResultSet} rows to
+ */
 public class DefaultMapper<T> implements Mapper<T> {
 
   private final Class<T> resultType;
@@ -57,7 +73,15 @@ public class DefaultMapper<T> implements Mapper<T> {
   private final List<PropertyDescriptor[]> cachedPaths = new ArrayList<>();
   
   private static final PropertyDescriptor[] EMPTY_PATH = {};
-  
+
+  /**
+   * Construct an instance of the default mapper that maps a query whose
+   * result metadata is {@code metaData} to the Java POJO of type
+   * {@link Class} of {@code T}.
+   *
+   * @param resultType the result type to map the query results to
+   * @param metaData the {@link ResultSetMetaData} to map from
+   */
   public DefaultMapper(Class<T> resultType, ResultSetMetaData metaData) {
     this.resultType = resultType;
     this.metaData = metaData;

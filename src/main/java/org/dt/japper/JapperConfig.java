@@ -46,6 +46,10 @@ import org.dt.japper.lob.BlobReader;
  */
 @API(status = Status.STABLE)
 public class JapperConfig {
+  /**
+   * The default JDBC fetch size to use if no other value is specified via
+   * a {@link JapperConfig} instance.
+   */
   public static final int DEFAULT_FETCH_SIZE = 500;
 
   /**
@@ -59,7 +63,7 @@ public class JapperConfig {
    */
   @API(status = Status.STABLE)
   public static JapperConfig fetchSize(int aSize) {
-    return new JapperConfig(aSize);
+    return new JapperConfig(aSize, 0L);
   }
 
   /**
@@ -105,32 +109,74 @@ public class JapperConfig {
    */
   private long maxBlobLength;
 
-  @API(status = Status.STABLE)
+  /**
+   * Create a new {@link JapperConfig} instance, setting the JDBC fetch size
+   * to {@code fetchSize}.
+   *
+   * @param fetchSize the JDBC fetch to set
+   * @deprecated Use the convenience factory method {@link #fetchSize(int)}
+   *             instead
+   */
+  @Deprecated
+  @API(status = Status.DEPRECATED)
   public JapperConfig(int fetchSize) {
     setFetchSize(fetchSize);
   }
 
+  /**
+   * Create a new {@link JapperConfig} instance, setting the JDBC fetch size
+   * to {@code fetchSize}, and BLOB field length limit to
+   * {@code maxBlobLength}.
+   *
+   * @param fetchSize the JDBC fetch size to set
+   * @param maxBlobLength the BLOB field length limit to set
+   */
   public JapperConfig(int fetchSize, long maxBlobLength) {
     setFetchSize(fetchSize);
     setMaxBlobLength(maxBlobLength);
   }
 
+  /**
+   * Create a new {@link JapperConfig} instance with all default values.
+   */
   public JapperConfig() {
     // use default fetch size
   }
 
+  /**
+   * Set the JDBC fetch size to use.
+   *
+   * @param fetchSize the JDBC fetch size to use
+   */
   public void setFetchSize(int fetchSize) {
     this.fetchSize = fetchSize;
   }
 
+  /**
+   * Get the JDBC fetch size
+   *
+   * @return the JDBC fetch size
+   */
   public int getFetchSize() {
     return fetchSize;
   }
 
+  /**
+   * Get the BLOB field length limit. Fields with values over this length
+   * will throw an {@link IllegalArgumentException} during mapping, i.e. at
+   * runtime.
+   *
+   * @return the BLOB field length limit
+   */
   public long getMaxBlobLength() {
     return maxBlobLength;
   }
 
+  /**
+   * Set the BLOB field length limit, in bytes.
+   *
+   * @param maxBlobLength the BLOB field length limit, in bytes
+   */
   public void setMaxBlobLength(long maxBlobLength) {
     this.maxBlobLength = maxBlobLength;
   }

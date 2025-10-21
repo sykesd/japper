@@ -37,7 +37,27 @@ import java.sql.SQLException;
  */
 
 
-
+/**
+ * The interface of something that can map rows from a {@link ResultSet} to
+ * Java POJOs of type {@code T}.
+ *
+ * @param <T> the type map {@link ResultSet} rows to
+ */
 public interface Mapper<T> {
+  /**
+   * Map the current row in {@link ResultSet} to a new instance of type
+   * {@code T}.
+   *
+   * @param config the {@link JapperConfig} that was given to control query
+   *               execution. The {@link Mapper} may use this to control
+   *               aspects of the mapping for this specific query, e.g.
+   *               limiting the maximum BLOB length that can be read.
+   * @param rs the {@link ResultSet} to obtain the current row from
+   * @param rowProcessor (Optional) {@link RowProcessor} that, when given,
+   *                     will be allowed to process the resulting instance of
+   *                     {@code T} before it is added to the query result set
+   * @return the instance of {@code T} that the row was mapped to
+   * @throws SQLException if any calls to {@link ResultSet} throw
+   */
   T map(JapperConfig config, ResultSet rs, RowProcessor<T> rowProcessor) throws SQLException;
 }

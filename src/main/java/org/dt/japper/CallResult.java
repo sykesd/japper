@@ -3,6 +3,7 @@ package org.dt.japper;
 import java.beans.PropertyDescriptor;
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -14,13 +15,29 @@ import java.util.Map;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
+/**
+ * Class that provides dynamic access to the results of a 
+ * {@link Japper#call(Connection, String, Object...)}, if any.
+ * <p> 
+ * This can be thought of analogous to {@link QueryResult}, but for call-like
+ * SQL statements.
+ */
 public class CallResult {
 
   private final List<Parameter> parameters = new ArrayList<>();
   private final Map<String, Object> valueMap = new HashMap<>();
   
   CallResult() {}
-  
+
+  /**
+   * Extract the value named {@code name} from the result of a call statement,
+   * casting the result to type {@code resultType}.
+   *
+   * @param name the name of the value to extract
+   * @param resultType the {@link Class} to try and cast the value to
+   * @return the value, cast to type {@link Class} of {@link T}
+   * @param <T> the actual result type
+   */
   public <T> T get(String name, Class<T> resultType) {
     if (resultType.isPrimitive()) {
       return magicBox(resultType, valueMap.get(name));
@@ -32,19 +49,19 @@ public class CallResult {
   @SuppressWarnings("unchecked")
   private <T> T magicBox(Class<T> resultType, Object value) {
     if (resultType == short.class) {
-      return (T) new Short(value != null ? (short) value : 0);
+      return (T) Short.valueOf(value != null ? (short) value : 0);
     }
     if (resultType == int.class) {
-      return (T) new Integer(value != null ? (int) value : 0);
+      return (T) Integer.valueOf(value != null ? (int) value : 0);
     }
     if (resultType == long.class) {
-      return (T) new Long(value != null ? (long) value : 0);
+      return (T) Long.valueOf(value != null ? (long) value : 0);
     }
     if (resultType == float.class) {
-      return (T) new Float(value != null ? (float) value : 0);
+      return (T) Float.valueOf(value != null ? (float) value : 0);
     }
     if (resultType == double.class) {
-      return (T) new Double(value != null ? (double) value : 0);
+      return (T) Double.valueOf(value != null ? (double) value : 0);
     }
 
     throw new IllegalArgumentException("Unsupported primitive type in OUT parameter wrangling: " + resultType.getName() + " from " + (value == null ? "(null)" : value.getClass()));
