@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 /*
- * Copyright (c) 2012-2015, David Sykes and Tomasz Orzechowski
+ * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -42,10 +42,16 @@ import java.util.Set;
  * 
  */
 
+/**
+ * A class which performs a basic parse of an SQL statement looking for bind
+ * parameters, and provides methods for potentially replacing bind parameters
+ * with JDBC placeholders ({@code ?}) and marking their position, and possibly
+ * expanding single bind parameters to multiple placeholders when the
+ * given parameter value is a {@link List} or similar.
+ */
+class ParameterParser {
 
-public class ParameterParser {
-
-  public static class ParameterValue {
+  static class ParameterValue {
     private final String name;
     private Object value;
     private final int replaceCount;
@@ -80,6 +86,7 @@ public class ParameterParser {
       if (value.getClass().isArray()) {
         return true;
       }
+      //noinspection RedundantIfStatement
       if (value instanceof Collection) {
         return true;
       }
@@ -118,8 +125,7 @@ public class ParameterParser {
         return 1;
       }
 
-      if (value instanceof Collection) {
-        Collection<?> bag = (Collection<?>) value;
+      if (value instanceof Collection<?> bag) {
         return bag.size();
       }
 
@@ -141,6 +147,15 @@ public class ParameterParser {
    */
   private boolean parsingForBatch;
 
+  /**
+   * Create an instance of a {@link ParameterParser} for binding the name/value
+   * pairs in {@code params} to the correct places in the SQL statement in
+   * {@code query}.
+   *
+   * @param query the SQL statement to bind parameter values to
+   * @param params the name/value pairs to obtain the parameter values from
+   *               when finding names in the SQL
+   */
   public ParameterParser(String query, Object...params) {
     this.originalSql = query;
 
@@ -400,7 +415,6 @@ public class ParameterParser {
       input.consume();
 
       state = State.IN_SQL;
-      return;
     }
   }
 

@@ -1,11 +1,12 @@
 package org.dt.japper;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
 
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +38,10 @@ import java.util.Date;
  * 
  */
 
-
+/**
+ * Utility methods to help with the work of mapping query result fields to
+ * Java POJO fields.
+ */
 public class MapperUtils {
   
   private static final Class<?>[] SIMPLE_TYPES = {
@@ -55,7 +59,17 @@ public class MapperUtils {
     , Timestamp.class
     , byte[].class
   };
-  
+
+  /**
+   * Is the given Java {@link Class} considered "simple" by Japper, for the
+   * purposes of mapping?
+   * <p>
+   * Simple types are those that are not themselves POJOs which require further
+   * mapping.
+   *
+   * @param type the {@link Class} to check
+   * @return {@code true} if it is a simple type
+   */
   public static boolean isSimpleType(Class<?> type) {
     for (Class<?> simpleType : SIMPLE_TYPES) {
       if (simpleType.equals(type)) return true;
@@ -82,10 +96,10 @@ public class MapperUtils {
    */
   public static <T> T create(Class<T> targetType) {
     try {
-      return targetType.newInstance();
+      return targetType.getDeclaredConstructor().newInstance();
     }
-    catch (InstantiationException | IllegalAccessException iEx) {
-      throw new IllegalArgumentException("Type "+targetType.getName()+" does not have a default constructor!", iEx);
+    catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException iEx) {
+      throw new IllegalArgumentException("Type " + targetType.getName() + " does not have a default constructor!", iEx);
     }
   }
 

@@ -43,10 +43,27 @@ import org.dt.japper.JapperConfig;
  * 
  */
 
+/**
+ * A class that can read BLOB fields into {@code byte[]}.
+ * <p>
+ * This provides a thin abstraction over the JDBC {@link Blob} class, that
+ * only allows reading the entire value into memory, but also limiting the
+ * maximum size of that can be read.
+ */
 public class BlobReader {
-
   private static final Log log = LogFactory.getLog(BlobReader.class);
 
+  /**
+   * The default maximum BLOB length to allow, unless changed via the Java
+   * system property {@code japper.blob.limit}, or per-query via
+   * {@link JapperConfig#setMaxBlobLength(long)}.
+   */
+  public static final long DEFAULT_MAX_BLOB_LENGTH = 64 * 1024 * 1024L;   // 64MB - max BLOB size we support loading at once
+
+  /**
+   * The active maximum BLOB length allowed, unless explicitly configured via
+   * {@link JapperConfig#setMaxBlobLength(long)}.
+   */
   public static final long MAX_BLOB_LENGTH = getMaxBlobLength();
 
 
@@ -88,8 +105,6 @@ public class BlobReader {
   private static long queryMaxBlobSize(JapperConfig config) {
     return config.getMaxBlobLength() > 0 ? config.getMaxBlobLength() : MAX_BLOB_LENGTH;
   }
-
-  public static final long DEFAULT_MAX_BLOB_LENGTH = 64 * 1024 * 1024L;   // 64MB - max BLOB size we support loading at once
 
   private static final Pattern REGEX_MAX_LENGTH = Pattern.compile("([0-9]+)([mM])?");
 

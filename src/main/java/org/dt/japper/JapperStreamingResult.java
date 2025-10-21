@@ -125,6 +125,12 @@ public class JapperStreamingResult<T> implements AutoCloseable, Iterator<T>, Ite
     this.profile = profile;
   }
 
+  /**
+   * Obtain the {@link Stream} of {@code T} of the mapped query result rows.
+   *
+   * @return a {@link Stream} of query result rows mapped to instances
+   *         of {@code T}
+   */
   public Stream<T> stream() {
     return StreamSupport.stream(spliterator(), false);
   }

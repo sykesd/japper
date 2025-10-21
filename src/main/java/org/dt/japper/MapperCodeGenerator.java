@@ -66,7 +66,19 @@ import org.apache.commons.logging.LogFactory;
 public class MapperCodeGenerator {
 
   private static final Log log = LogFactory.getLog(Japper.class);
-  
+
+  /**
+   * Create, via code generation and compilation, an instance of {@link Mapper}
+   * that will map query results with rows of type {@code metaData} to new
+   * instances of Java POJOs of type {@link T}.
+   *
+   * @param resultType the {@link Class} of {@code T} to map query result rows
+   *                   to
+   * @param metaData the {@link ResultSetMetaData} of the query results
+   * @return the instance of {@link Mapper} that will perform the mapping
+   * @param <T> the POJO type to map to
+   * @throws SQLException if inspecting the {@link ResultSetMetaData} throws
+   */
   @SuppressWarnings("unchecked")
   public static <T> Mapper<T> create(Class<T> resultType, ResultSetMetaData metaData) throws SQLException {
     CtClass impl = createClass();

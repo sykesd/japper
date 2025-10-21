@@ -40,24 +40,39 @@ import org.apiguardian.api.API.Status;
  * 
  */
 
+/**
+ * A wrapper around a {@link ResultSet} and its underlying
+ * {@link PreparedStatement} that can perform proper cleanup when done.
+ * <p>
+ * Some versions of the methods of {@link Japper} which actually execute
+ * queries return an instance of this, and the caller is expected to read
+ * the query results themselves, and then call {@link #close()} to ensure
+ * the underlying results get cleaned up.
+ */
 @API(status = Status.STABLE)
-public class QueryResult {
+public class QueryResult implements AutoCloseable {
 
   private final PreparedStatement ps;
   private final ResultSet rs;
-  
-  public QueryResult(PreparedStatement ps, ResultSet rs) {
+
+  QueryResult(PreparedStatement ps, ResultSet rs) {
     this.ps = ps;
     this.rs = rs;
   }
 
+  /**
+   * Get the {@link ResultSet} in order to read the query results.
+   *
+   * @return the {@link ResultSet}
+   */
   @API(status = Status.STABLE)
   public ResultSet getResultSet() { return rs; }
 
   @API(status = Status.STABLE)
+  @Override
   public void close() {
     try { if (rs != null) rs.close(); } catch (SQLException ignored) {}
     try { if (ps != null) ps.close(); } catch (SQLException ignored) {}
   }
-  
+
 }

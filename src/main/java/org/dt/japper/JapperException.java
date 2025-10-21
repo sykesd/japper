@@ -1,6 +1,7 @@
 package org.dt.japper;
 
 import java.sql.BatchUpdateException;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /*
@@ -37,6 +38,10 @@ import java.sql.Statement;
  */
 
 
+/**
+ * A {@link RuntimeException} subclass used when Japper operations catch
+ * {@link SQLException}, or others, during their execution.
+ */
 public class JapperException extends RuntimeException {
 
   /**
@@ -45,7 +50,6 @@ public class JapperException extends RuntimeException {
    * Try to figure out which set of parameters was the one that caused the error and
    * include that information in the exception message.
    *
-   * </p>
    * @param buEx the {@link BatchUpdateException} thrown when executing the statement batch
    * @param batchSize the size of the batch that was executed
    * @return a {@link JapperException} wrapping the root cause, hopefully including which parameter set the error occurred on
@@ -78,13 +82,24 @@ public class JapperException extends RuntimeException {
     return new JapperException(buEx);
   }
 
-
+  /**
+   * Create a {@link JapperException} instance with {@code cause} as the
+   * underlying root cause.
+   *
+   * @param cause the cause of this {@link JapperException}
+   */
   public JapperException(Throwable cause) {
     super("Error executing Japper query", cause);
   }
 
+  /**
+   * Create a {@link JapperException} instance with the given error message,
+   * and {@code cause} as the underlying root cause.
+   *
+   * @param message the error message to include in the {@link JapperException}
+   * @param cause the root cause to report
+   */
   public JapperException(String message, Throwable cause) {
     super("Error executing Japper query: " + message, cause);
   }
-
 }
