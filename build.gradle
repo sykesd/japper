@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'org.dt'
-version '1.0-SNAPSHOT'
+version '1.0'
 
 repositories {
     mavenCentral()
@@ -43,4 +43,24 @@ java {
 
 test {
     useJUnitPlatform()
+}
+
+/**
+ * Everything from here down generates a version.properties file containing
+ * version information that ends up in the JAR at the correct location for
+ * the {@code Japper.getVersion()} to return the actual version.
+ */
+def versionTask = tasks.register("generateVersionProps", WriteProperties) { t ->
+    def generatedResourcesDir = project.layout.buildDirectory.dir(["generated", "sources", "japper", "main", "resources"].join(File.separator))
+    def outputFile = generatedResourcesDir.map {it -> it.file("version.properties") }
+
+    t.outputFile(outputFile)
+    t.property("version", project.version.toString())
+    t.property("buildDate", new Date().format("yyyyMMddHHmmss"))
+}
+
+processResources {
+    into('org/dt/japper') {
+        from versionTask
+    }
 }
