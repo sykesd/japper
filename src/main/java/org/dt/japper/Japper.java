@@ -25,8 +25,6 @@ import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 
 /*
  * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
@@ -98,7 +96,6 @@ import org.apiguardian.api.API.Status;
  * @author David Sykes
  *
  */
-@API(status = Status.STABLE)
 public class Japper {
   
   private static final Log log = LogFactory.getLog(Japper.class);
@@ -128,7 +125,6 @@ public class Japper {
    * @param paramLists the array of {@code Object[]} parameter lists to put together into a single {@link List}
    * @return the {@link List} of parameter lists ({@code Object[]})
    */
-  @API(status = Status.STABLE)
   public static List<Object[]> paramLists(Object[]...paramLists) {
     if (paramLists == null) {
       return Collections.emptyList();
@@ -152,7 +148,6 @@ public class Japper {
    * @param params the parameter list
    * @return the parameter list as an {@code Object[]}
    */
-  @API(status = Status.STABLE)
   public static Object[] params(Object...params) {
     return params != null ? params : NO_PARAMS;
   }
@@ -173,7 +168,6 @@ public class Japper {
    *         or as a {@link java.util.stream.Stream}.
    * @param <T> the model type the results will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(Connection conn, Class<T> resultType, String sql, Object...params) {
     return streamableOf(DEFAULT_CONFIG, conn, resultType, null, sql, params);
   }
@@ -196,7 +190,6 @@ public class Japper {
    *         or as a {@link java.util.stream.Stream}.
    * @param <T> the model type the results will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, String sql, Object...params) {
     return streamableOf(config, conn, resultType, null, sql, params);
   }
@@ -222,7 +215,6 @@ public class Japper {
    * @param <T> the model type the results will be mapped to
    */
   @SuppressWarnings("ThrowFromFinallyBlock")
-  @API(status = Status.STABLE)
   public static <T> JapperStreamingResult<T> streamableOf(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     Profile profile = new Profile(resultType, sql);
 
@@ -300,7 +292,6 @@ public class Japper {
    *         or an empty list of the query returns no results
    * @param <T> the model type the results will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> List<T> query(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     return query(DEFAULT_CONFIG, conn, resultType, rowProcessor, sql, params);
   }
@@ -320,7 +311,6 @@ public class Japper {
    * @param <T> the model type the results will be mapped to
    */
   @SuppressWarnings("ThrowFromFinallyBlock")
-  @API(status = Status.STABLE)
   public static <T> List<T> query(JapperConfig config, Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     Profile profile = new Profile(resultType, sql);
 
@@ -399,7 +389,6 @@ public class Japper {
    *         or an empty list of the query returns no results
    * @param <T> the model type the results will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> List<T> query(Connection conn, Class<T> resultType, String sql, Object...params) {
     return query(DEFAULT_CONFIG, conn, resultType, null, sql, params);
   }
@@ -417,7 +406,6 @@ public class Japper {
    *         or an empty list of the query returns no results
    * @param <T> the model type the results will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> List<T> query(JapperConfig config, Connection conn, Class<T> resultType, String sql, Object...params) {
     return query(config, conn, resultType, null, sql, params);
   }
@@ -444,7 +432,6 @@ public class Japper {
    *         or {@code null} if the query returns no results
    * @param <T> the model type the result will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> T queryOne(Connection conn, Class<T> resultType, RowProcessor<T> rowProcessor, String sql, Object...params) {
     return queryOne(DEFAULT_CONFIG, conn, resultType, rowProcessor, sql, params);
   }
@@ -469,7 +456,6 @@ public class Japper {
    *         or {@code null} if the query returns no results
    * @param <T> the model type the result will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> T queryOne(
           JapperConfig config,
           Connection conn,
@@ -504,7 +490,6 @@ public class Japper {
    *         or {@code null} if the query returns no results
    * @param <T> the model type the result will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> T queryOne(
           JapperConfig config,
           Connection conn,
@@ -539,7 +524,6 @@ public class Japper {
    *         or {@code null} if the query returns no results
    * @param <T> the model type the result will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> T queryOne(Connection conn, Class<T> resultType, String sql, Object...params) {
     return queryOne(DEFAULT_CONFIG, conn, resultType, null, sql, params);
   }
@@ -558,7 +542,6 @@ public class Japper {
    * @param params the parameters to the query, in name/value pairs
    * @return the result set as a {@link QueryResult}
    */
-  @API(status = Status.STABLE)
   public static QueryResult query(Connection conn, String sql, Object...params) {
     return query(DEFAULT_CONFIG, conn, sql, params);
   }
@@ -573,7 +556,6 @@ public class Japper {
    * @param params the parameters to the query, in name/value pairs
    * @return the result set as a {@link QueryResult}
    */
-  @API(status = Status.STABLE)
   public static QueryResult query(JapperConfig config, Connection conn, String sql, Object...params) {
     Profile profile = new Profile(ResultSet.class, sql);
     
@@ -623,7 +605,6 @@ public class Japper {
    * @param params the parameters to the query, in name/value pairs
    * @return the number of rows affected by the given statement
    */
-  @API(status = Status.STABLE)
   public static int execute(Connection conn, String sql, Object...params) {
     return execute(DEFAULT_CONFIG, conn, sql, params);
   }
@@ -642,7 +623,6 @@ public class Japper {
    * @param params the parameters to the query, in name/value pairs
    * @return the number of rows affected by the given statement
    */
-  @API(status = Status.STABLE)
   public static int execute(JapperConfig config, Connection conn, String sql, Object...params) {
     Profile profile = new Profile("statement", int.class, sql);
 
@@ -690,7 +670,6 @@ public class Japper {
    *                   or name/value pairs
    * @return the total number of rows affected by the batch
    */
-  @API(status = Status.STABLE)
   public static int executeBatch(Connection conn, String sql, List<Object[]> paramsList) {
     return executeBatch(DEFAULT_CONFIG, conn, sql, paramsList);
   }
@@ -714,7 +693,6 @@ public class Japper {
    *                   or name/value pairs
    * @return the total number of rows affected by the batch
    */
-  @API(status = Status.STABLE)
   public static int executeBatch(JapperConfig config, Connection conn, String sql, List<Object[]> paramsList) {
     Profile profile = new Profile("statement", int.class, sql);
 
@@ -784,7 +762,6 @@ public class Japper {
    * @return an instance of target type with any {@code OUT} parameters mapped to its properties
    * @param <T> the model type the outputs will be mapped to
    */
-  @API(status = Status.STABLE)
   public static <T> T call(Connection conn, Class<T> targetType, String sql, Object...params) {
     Profile profile = new Profile("call", int.class, sql);
     
@@ -833,7 +810,6 @@ public class Japper {
    * @param params the parameters to the query, in name/value pairs
    * @return a {@link CallResult} with any {@code OUT} parameter values
    */
-  @API(status = Status.STABLE)
   public static CallResult call(Connection conn, String sql, Object...params) {
     Profile profile = new Profile("call", int.class, sql);
     
@@ -888,7 +864,6 @@ public class Japper {
    * @return the {@link OutParameter} instance to pass in the parameters
    *         to {@link #call(Connection, Class, String, Object...) call}
    */
-  @API(status = Status.STABLE)
   public static OutParameter out(Class<?> type) { return new OutParameter(type); }
   
   
@@ -900,7 +875,6 @@ public class Japper {
    *
    * @return the version of the Japper library, as a {@link String}
    */
-  @API(status = Status.STABLE)
   public static String getVersion() {
     if (version != null) return version;
     

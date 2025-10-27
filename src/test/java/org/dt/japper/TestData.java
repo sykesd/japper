@@ -122,7 +122,7 @@ public class TestData {
   
   private static final Object[][] DATA_CURRENCY = {
       { "AUD", "A$", "Australian Dollar" }
-    , { "EUR", "€", "Euro" }
+    , { "EUR", "\u20ac", "Euro" }
     , { "USD", "US$", "US Dollar" }
   };
 

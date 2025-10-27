@@ -4,11 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
-
 /*
- * Copyright (c) 2012, David Sykes and Tomasz Orzechowski 
+ * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +46,6 @@ import org.apiguardian.api.API.Status;
  * the query results themselves, and then call {@link #close()} to ensure
  * the underlying results get cleaned up.
  */
-@API(status = Status.STABLE)
 public class QueryResult implements AutoCloseable {
 
   private final PreparedStatement ps;
@@ -65,10 +61,8 @@ public class QueryResult implements AutoCloseable {
    *
    * @return the {@link ResultSet}
    */
-  @API(status = Status.STABLE)
   public ResultSet getResultSet() { return rs; }
 
-  @API(status = Status.STABLE)
   @Override
   public void close() {
     try { if (rs != null) rs.close(); } catch (SQLException ignored) {}

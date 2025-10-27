@@ -184,7 +184,7 @@ public class SimpleMapTest {
   public void mapPartsInSet() throws Exception {
     Connection conn = testData.connect();
 
-    Set<String> partsSet = new HashSet<String>( Arrays.asList("123456", "123789", "123456") );
+    Set<String> partsSet = new HashSet<>(Arrays.asList("123456", "123789", "123456"));
     assertEquals(2, partsSet.size());
 
     List<PartModel> parts = Japper.query(conn, PartModel.class, SQL_PARTS_IN_LIST, "PART_LIST", partsSet);
@@ -224,7 +224,7 @@ public class SimpleMapTest {
     PartModel part = price.getPart();
     assertEquals("123456", part.getPartno());
     assertEquals("EUR", price.getCurrency().getCurrencyCode());
-    assertEquals("€", price.getCurrency().getCurrencySymbol());
+    assertEquals("\u20AC", price.getCurrency().getCurrencySymbol());
     assertEquals(0, BigDecimal.valueOf(100).compareTo(price.getPrice()));
     
     conn.close();

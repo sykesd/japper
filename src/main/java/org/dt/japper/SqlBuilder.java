@@ -3,11 +3,8 @@ package org.dt.japper;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
-
 /*
- * Copyright (c) 2012-2022, David Sykes and Tomasz Orzechowski
+ * Copyright (c) 2012-2025, David Sykes and Tomasz Orzechowski
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -82,7 +79,6 @@ import org.apiguardian.api.API.Status;
  * replacement of the fragments is performed through its owning {@code SqlBuilder}
  * </p>
  */
-@API(status = Status.STABLE)
 public class SqlBuilder {
 
   private final Map<String, Template> templateMap = new HashMap<>();
@@ -94,7 +90,6 @@ public class SqlBuilder {
    * @param sqlTemplate the SQL statement template
    * @return the {@link Template} instance created
    */
-  @API(status = Status.STABLE)
   public Template addTemplate(String id, String sqlTemplate) {
     templateMap.put(id, new Template(sqlTemplate));
     return templateMap.get(id);
@@ -107,7 +102,6 @@ public class SqlBuilder {
    * @param id the ID of the fragment in the template to replace
    * @param fragment the {@link String} to replace the fragment placeholder with
    */
-  @API(status = Status.STABLE)
   public void replaceFragment(String id, String fragment) {
     for (Template template : templateMap.values()) {
       template.replaceFragment(id, fragment);
@@ -122,7 +116,6 @@ public class SqlBuilder {
    * @param id the ID of the SQL template to retrieve
    * @return the SQL statement with any of the fragment placeholders replaced
    */
-  @API(status = Status.STABLE)
   public String getSql(String id) {
     return templateMap.get(id).getSql();
   }
@@ -130,7 +123,6 @@ public class SqlBuilder {
   /**
    * Restore all SQL statement templates in this builder back to their original state.
    */
-  @API(status = Status.STABLE)
   public void reset() {
     for (Template template : templateMap.values()) {
       template.reset();

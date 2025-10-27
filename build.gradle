@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'org.dt'
-version '1.0.1'
+version '1.0.2'
 
 repositories {
     mavenCentral()
@@ -22,8 +22,6 @@ dependencies {
     }
     implementation 'commons-logging:commons-logging:1.2'
     implementation 'org.javassist:javassist:3.29.2-GA'
-
-    compileOnly 'org.apiguardian:apiguardian-api:1.1.2'
 
     testImplementation 'org.hsqldb:hsqldb:2.7.4'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'

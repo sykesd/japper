@@ -33,8 +33,6 @@ package org.dt.japper;
  *
  */
 
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 import org.dt.japper.lob.BlobReader;
 
 /**
@@ -44,7 +42,6 @@ import org.dt.japper.lob.BlobReader;
  *   executing queries.
  * </p>
  */
-@API(status = Status.STABLE)
 public class JapperConfig {
   /**
    * The default JDBC fetch size to use if no other value is specified via
@@ -61,7 +58,6 @@ public class JapperConfig {
    * @return the new {@link JapperConfig} instance configured with the given
    *         fetch size
    */
-  @API(status = Status.STABLE)
   public static JapperConfig fetchSize(int aSize) {
     return new JapperConfig(aSize, 0L);
   }
@@ -118,7 +114,6 @@ public class JapperConfig {
    *             instead
    */
   @Deprecated
-  @API(status = Status.DEPRECATED)
   public JapperConfig(int fetchSize) {
     setFetchSize(fetchSize);
   }
