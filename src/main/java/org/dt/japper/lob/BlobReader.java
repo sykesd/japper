@@ -106,15 +106,13 @@ public class BlobReader {
     return config.getMaxBlobLength() > 0 ? config.getMaxBlobLength() : MAX_BLOB_LENGTH;
   }
 
-  private static final Pattern REGEX_MAX_LENGTH = Pattern.compile("([0-9]+)([mM])?");
-
   private static long getMaxBlobLength() {
     try {
       String rawLength = System.getProperty("japper.blob.limit", "64M");
       return parseMaxBlobLength(rawLength);
     }
     catch (Exception ex) {
-      log.error(String.format("Error reading BLOB size limit - using default of %d bytes", DEFAULT_MAX_BLOB_LENGTH));
+      log.error(String.format("Error reading BLOB size limit - using default of %d bytes", DEFAULT_MAX_BLOB_LENGTH), ex);
       return DEFAULT_MAX_BLOB_LENGTH;
     }
   }
@@ -124,7 +122,15 @@ public class BlobReader {
       return DEFAULT_MAX_BLOB_LENGTH;
     }
 
-    Matcher matcher = REGEX_MAX_LENGTH.matcher(rawLength);
+    // Normally we would place the regular expression in a
+    // "private static final" field in the class, but this can lead to an NPE
+    // because this method is called during the initial class load to
+    // initialize the MAX_BLOB_LENGTH field...which means that class
+    // initialization is now dependent on the order that fields are placed in
+    // the source code!!
+    // Also, this is only ever called once, so pre-compiling doesn't actually
+    // gain us anything.
+    Matcher matcher = Pattern.compile("([0-9]+)([mM])?").matcher(rawLength);
     if (matcher.matches()) {
       return Long.parseLong(matcher.group(1)) * 1024L * 1024L;
     }
