@@ -1172,6 +1172,7 @@ public class Japper {
     private String sql;
     
     private final List<ParamSet> paramSets = new ArrayList<>();
+    private long logOverhead;
 
     public Profile(Class<?> type, String originalSql) {
       this("query", type, originalSql);
@@ -1197,20 +1198,42 @@ public class Japper {
     }
 
     private String valueToString(Object value) {
-      if (value == null) {
-        return "(null)";
+      if (!log.isInfoEnabled()) {
+        // Not even info enabled!! Nothing will be logged anyway
+        return "";
       }
 
-      if (!value.getClass().isArray()) {
-        return value.toString();
-      }
+      long start = System.nanoTime();
+      try {
+        if (value == null) {
+          return "(null)";
+        }
 
-      StringBuilder s = new StringBuilder("[");
-      for (int i = 0; i < Array.getLength(value); i++) {
-        s.append(i > 0 ? ", " : "").append(valueToString(Array.get(value, i)));
+        if (!value.getClass().isArray()) {
+          return value.toString();
+        }
+
+        int arrayLength = Array.getLength(value);
+        StringBuilder s = new StringBuilder("[(")
+                .append(arrayLength)
+                .append(")  ");
+
+        int logLength = Math.min(10, arrayLength);
+        int restLength = arrayLength - logLength;
+
+        for (int i = 0; i < logLength; i++) {
+          s.append(i > 0 ? ", " : "").append(valueToString(Array.get(value, i)));
+        }
+
+        if (restLength > 0) {
+          s.append("...");
+        }
+        s.append("]");
+        return s.toString();
       }
-      s.append("]");
-      return s.toString();
+      finally {
+        logOverhead += System.nanoTime() - start;
+      }
     }
     
     public void startPrep() { prepStart = System.nanoTime(); }
@@ -1252,6 +1275,8 @@ public class Japper {
         return;
       }
 
+      long start = System.nanoTime();
+
       // First line of log message is the high level - statement type, model type, total time and rows
       StringBuilder message = new StringBuilder(dmlType);
       formatTopLevelResult(message);
@@ -1263,14 +1288,14 @@ public class Japper {
 
       if (log.isDebugEnabled()) {
         // Debug level! Include the time breakdown and the actual SQL executed
-        formatTimeBreakdown(message);
+        formatTimeBreakdown(start, message);
         message.append("  sql=").append(sql);
       }
 
       log.info(message.toString());
     }
 
-    private void formatTimeBreakdown(StringBuilder message) {
+    private void formatTimeBreakdown(long start, StringBuilder message) {
       message.append("\n  [");
       message.append("prep=").append(nicify(prepStart, prepEnd));
       message.append(" query=").append(nicify(queryStart, queryEnd));
@@ -1283,6 +1308,9 @@ public class Japper {
         message.append(" avg=").append(nicify((long) avgPerRow()));
         message.append("}");
       }
+
+      logOverhead += System.nanoTime() - start;
+      message.append(" log=").append(nicify(logOverhead));
       message.append("]");
     }
 
@@ -1343,7 +1371,7 @@ public class Japper {
       }
       
       if (duration > MICRO_THRESHOLD) {
-        return (duration / 1_000L)+"us";
+        return (duration / 1_000L)+"\u03BCs";
       }
       
       return duration + "ns";

@@ -48,7 +48,7 @@ public class WriteBlobTest {
   public void writeBlobTest() throws Exception {
     Connection conn = testData.connect();
 
-    byte[] blob = "MAGIC".getBytes(StandardCharsets.UTF_8);
+    byte[] blob = "MAGIC_MAGIC_MAGIC".getBytes(StandardCharsets.UTF_8);
 
     int rowsAffected = Japper.execute(conn, SQL_INSERT_ATTACHMENT
             , "ID", 13
@@ -61,7 +61,7 @@ public class WriteBlobTest {
     assertNotNull(a);
 
     String s = new String(a.getAttachment(), StandardCharsets.UTF_8);
-    assertEquals("MAGIC", s);
+    assertEquals("MAGIC_MAGIC_MAGIC", s);
 
     conn.close();
   }
